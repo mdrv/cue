@@ -3,7 +3,7 @@ mid: cue-overview
 label: "00 — Overview"
 description: What Cue is, design principles, stakeholders, non-goals
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T19:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -70,7 +70,7 @@ The config maps speaker names to columns. The transcript tags cues with speakers
 
 ## Non-goals for v1
 
-- Rich text / markdown rendering in cues (plain text only).
+- Block-level markdown (headings, lists, blockquotes) in cues — inline subset is supported.
 - Audio/video playback or recording.
 - Multi-user or networked sessions.
 - Export to PDF or other formats.

@@ -3,7 +3,7 @@ mid: cue-guide-cli-usage
 label: "20 — CLI Usage Guide"
 description: Practical walkthrough of using cue from the command line
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T19:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -80,6 +80,23 @@ cue check --json my-transcript.ts
 # Output: {"valid":true,"cues":12,"speakers":["main","side"],...}
 ```
 
+## List cues with details
+
+See a numbered breakdown of every cue — speaker, duration, and a preview of the text:
+
+```sh
+cue list my-transcript.ts
+# ✓ my-transcript.ts "My Talk" — 12 cues, speakers: main, side
+#   1. [main] (3000ms) Welcome to the show! Today we are going to explore...
+#   2. [side] (4000ms) Thanks for having me! I am excited to share...
+#   ...
+#   Total: 45000ms timed, 2 manual cues
+
+cue list --wpm 180 my-transcript.ts   # show estimated durations for manual cues
+
+cue list --json my-transcript.ts      # machine-readable JSON output
+```
+
 ## Initialize config
 
 Create a starter config file:
@@ -99,6 +116,7 @@ import { defineConfig } from '@mdrv/cue'
 
 export default defineConfig({
 	fontSize: 56,
+	anchor: 'top',
 	theme: {
 		background: '#1a1a2e',
 		focus: '#eaeaea',

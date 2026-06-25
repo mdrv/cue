@@ -6,6 +6,7 @@ import packageJson from '../../package.json' with { type: 'json' }
 import { CueError } from '../errors/index.ts'
 import { checkCmd } from './check.ts'
 import { initCmd } from './init.ts'
+import { listCmd } from './list.ts'
 import { playApp } from './play.ts'
 import { app } from './shared.ts'
 
@@ -13,6 +14,7 @@ const configuredApp = playApp
 	.use(versionPlugin(packageJson.version ?? '0.0.0'))
 	.use(helpPlugin())
 	.command(checkCmd)
+	.command(listCmd)
 	.command(initCmd)
 
 async function main(): Promise<void> {
@@ -32,7 +34,15 @@ async function main(): Promise<void> {
 			return
 		}
 		if (cause instanceof CueError) {
-			process.stderr.write(`${cause.toString()}\n`)
+			process.stderr.write(`cue: ${cause.message}\n`)
+			const ctx = cause.context ?? {}
+			if (Array.isArray(ctx.issues)) {
+				for (const i of ctx.issues) process.stderr.write(`  - ${i}\n`)
+			}
+			for (const [k, v] of Object.entries(ctx)) {
+				if (k === 'issues') continue
+				process.stderr.write(`  ${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}\n`)
+			}
 			process.exitCode = 1
 			return
 		}
@@ -43,4 +53,4 @@ async function main(): Promise<void> {
 	}
 }
 
-void main()
+await main()

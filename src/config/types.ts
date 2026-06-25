@@ -7,6 +7,7 @@ export interface ThemeConfig {
 }
 
 export type Column = 'left' | 'right'
+export type Anchor = 'top' | 'bottom'
 
 export interface SpeakerConfig {
 	readonly column: Column
@@ -19,6 +20,8 @@ export interface CueConfig {
 	readonly wpm: number
 	readonly duet: boolean
 	readonly fontSize: number
+	readonly markdown: boolean
+	readonly anchor: Anchor
 	readonly theme: ThemeConfig
 	readonly lightTheme: ThemeConfig
 	readonly speakers: Record<string, SpeakerConfig>
@@ -45,6 +48,8 @@ export const DEFAULT_CONFIG: CueConfig = {
 	wpm: 160,
 	duet: false,
 	fontSize: 48,
+	markdown: true,
+	anchor: 'top',
 	theme: DEFAULT_THEME,
 	lightTheme: LIGHT_THEME,
 	speakers: {

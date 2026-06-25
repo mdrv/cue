@@ -3,7 +3,7 @@ mid: cue-transcript-format
 label: "10 — Transcript Format"
 description: .ts transcript schema, cue shape, speakers, meta object
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T18:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -41,11 +41,11 @@ export const transcript = {
 
 ## Cue shape
 
-| Field      | Type     | Required | Description                                              |
-| ---------- | -------- | -------- | -------------------------------------------------------- |
-| `text`     | `string` | yes      | The text to display. Must be non-empty                   |
-| `duration` | `number` | no       | Auto-advance delay in milliseconds. Omit for manual-only |
-| `speaker`  | `string` | no       | Speaker tag. Defaults to `'main'`                        |
+| Field      | Type     | Required | Description                                                                  |
+| ---------- | -------- | -------- | ---------------------------------------------------------------------------- |
+| `text`     | `string` | yes      | The text to display. Must be non-empty. Supports inline markdown (see below) |
+| `duration` | `number` | no       | Auto-advance delay in milliseconds. Omit for manual-only                     |
+| `speaker`  | `string` | no       | Speaker tag. Defaults to `'main'`                                            |
 
 ## TranscriptMeta shape
 
@@ -90,3 +90,22 @@ Cue loads transcript files via `Bun.dynamicImport()` with `pathToFileURL`. This 
 - Imports work normally (you can import other modules in your transcript file)
 - The file must export `transcript` as a named export
 - Top-level side effects in the transcript file will execute
+
+## Inline markdown (v0.0.2)
+
+Cue `text` supports an inline markdown subset by default:
+
+- `**bold**` → `<strong>`
+- `*italic*` → `<em>`
+- `` `code` `` → `<code>`
+- `[label](url)` → `<a href="url">label</a>`
+
+HTML is escaped first; `javascript:` and `data:` URLs are blocked. The renderer is inline-only — block-level markdown (headings, lists, blockquotes) is deferred to v0.1.0.
+
+Disable rendering globally via config:
+
+```ts
+export default defineConfig({ markdown: false })
+```
+
+When `markdown: false`, cue text is rendered verbatim (HTML-escaped, no inline transforms).

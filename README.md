@@ -28,7 +28,11 @@ cue transcript.ts
 - **Look-ahead focus** — current cue bright, surrounding cues dimmed
 - **Duet mode** — two-column layout for partner reading or translations
 - **Hybrid timing** — auto-advance by duration (ms) or manual keypress, mixed freely
-- **Hot-reload** — edit the transcript file, changes appear instantly via SSE
+- **Hot-reload** — edit transcript or config, changes appear instantly via SSE
+- **Inline markdown** — `**bold**`, `*italic*`, `` `code` ``, `[label](url)` in cue text
+- **Scroll anchor** — `anchor: 'top'` (default) pins focus to top, `anchor: 'bottom'` pins it to the bottom so content scrolls down
+- **Progress bar** — thin position indicator at the bottom
+- **Persistence** — font size and theme saved per transcript via `localStorage`
 - **Optional config** — `~/.config/cue/cue.ts` for theme, speakers, and defaults
 - **Vanilla frontend** — no build step, no framework, single HTML page
 
@@ -52,7 +56,7 @@ Each cue has:
 
 ## CLI
 
-```sh
+````sh
 cue <file>                  # start prompter
 cue <file> --duet           # force dual-column layout
 cue <file> --estimate       # auto-fill missing durations
@@ -60,8 +64,10 @@ cue <file> --port 8080      # custom port
 cue <file> --no-open        # don't open browser
 cue check <file>            # validate transcript
 cue check <file> --json     # validate, output JSON
+cue list <file>           # numbered per-cue breakdown
+cue list <file> --json    # richer JSON than check
+cue list <file> --wpm 180 # show ~Xms estimates for untimed cues
 cue init                    # create sample config
-```
 
 ## Config
 
@@ -71,6 +77,7 @@ import { defineConfig } from '@mdrv/cue'
 
 export default defineConfig({
 	fontSize: 56,
+	anchor: 'top',
 	theme: {
 		background: '#0b0d12',
 		focus: '#f5f7fb',
@@ -83,21 +90,22 @@ export default defineConfig({
 		side: { column: 'right', color: '#fca5a5' },
 	},
 })
-```
+````
 
 Resolution order: `--config` → `./.cue/cue.ts` → `~/.config/cue/cue.ts` → defaults.
 
 ## Keyboard controls
 
-| Key                     | Action            |
-| ----------------------- | ----------------- |
-| `Space` / `Enter` / `→` | Next cue          |
-| `←`                     | Previous cue      |
-| `P`                     | Toggle play/pause |
-| `R`                     | Restart           |
-| `F`                     | Fullscreen        |
-| `+` / `-`               | Font size         |
-| `?`                     | Help              |
+| Key                     | Action               |
+| ----------------------- | -------------------- |
+| `Space` / `Enter` / `→` | Next cue             |
+| `←`                     | Previous cue         |
+| `P`                     | Toggle play/pause    |
+| `R`                     | Restart              |
+| `F`                     | Fullscreen           |
+| `T`                     | Toggle theme (saved) |
+| `+` / `-`               | Font size            |
+| `?`                     | Help                 |
 
 ## Programmatic API
 
@@ -107,6 +115,7 @@ import {
 	estimateDurations,
 	loadConfig,
 	parseTranscriptFile,
+	renderInlineMarkdown,
 	VERSION,
 } from '@mdrv/cue'
 

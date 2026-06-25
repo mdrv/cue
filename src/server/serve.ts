@@ -13,6 +13,8 @@ const log = getLogger(['cue', 'server'])
 export interface ServeOptions {
 	readonly transcriptPath: string
 	readonly config: CueConfig
+	readonly configPath?: string
+	readonly reloadConfig?: () => Promise<CueConfig>
 	readonly watch?: boolean
 }
 
@@ -22,9 +24,11 @@ export interface ServeHandle {
 }
 
 export async function serveTranscript(opts: ServeOptions): Promise<ServeHandle> {
-	const { transcriptPath, config, watch = true } = opts
+	const { transcriptPath, configPath, reloadConfig, watch = true } = opts
 	let transcript = await loadTranscript(transcriptPath)
+	let config = opts.config
 	const hub = new ReloadHub()
+	const watchers: FSWatcher[] = []
 
 	const server = Bun.serve({
 		port: config.port,
@@ -48,7 +52,7 @@ export async function serveTranscript(opts: ServeOptions): Promise<ServeHandle> 
 	log.info('Serving on {url}', { url })
 
 	if (watch) {
-		startWatcher(transcriptPath, async () => {
+		startWatcher(watchers, transcriptPath, async () => {
 			try {
 				transcript = await loadTranscript(transcriptPath)
 				hub.broadcast({ meta: transcript.meta, cues: transcript.cues })
@@ -58,6 +62,19 @@ export async function serveTranscript(opts: ServeOptions): Promise<ServeHandle> 
 				})
 			}
 		})
+		if (configPath && reloadConfig) {
+			startWatcher(watchers, configPath, async () => {
+				try {
+					config = await reloadConfig()
+					hub.broadcast({ config })
+					log.info('Config reloaded')
+				} catch (cause) {
+					log.warn('Config reload skipped: {cause}', {
+						cause: cause instanceof Error ? cause.message : String(cause),
+					})
+				}
+			})
+		}
 	}
 
 	if (config.open) {
@@ -70,26 +87,25 @@ export async function serveTranscript(opts: ServeOptions): Promise<ServeHandle> 
 	return {
 		url,
 		stop: async () => {
-			watcher?.close()
+			for (const w of watchers) w.close()
 			server.stop(true)
 			log.info('Server stopped')
 		},
 	}
 }
 
-let watcher: FSWatcher | undefined
-
-function startWatcher(path: string, onChange: () => void): void {
+function startWatcher(watchers: FSWatcher[], path: string, onChange: () => void): void {
 	let timer: Timer | undefined
 	try {
-		watcher = watch(path, () => {
+		const w = watch(path, () => {
 			clearTimeout(timer)
 			timer = setTimeout(onChange, 150)
 		})
-		watcher.on('error', () => {})
+		w.on('error', () => {})
+		watchers.push(w)
 		log.debug('Watching {path} for changes', { path })
 	} catch (cause) {
-		throw cueError('SERVE', 'Failed to watch transcript file for changes', {
+		throw cueError('SERVE', 'Failed to watch file for changes', {
 			path,
 			cause: cause instanceof Error ? cause.message : String(cause),
 		})

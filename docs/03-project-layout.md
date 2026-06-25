@@ -3,7 +3,7 @@ mid: cue-project-layout
 label: "03 — Project Layout"
 description: Source tree, module boundaries, public API surface
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T19:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -23,6 +23,7 @@ cue/
 │   │   ├── shared.ts  Crust app + GlobalFlags
 │   │   ├── play.ts    root command: cue <file>
 │   │   ├── check.ts   cue check <file>
+│   │   ├── list.ts    cue list <file>
 │   │   └── init.ts    cue init
 │   ├── config/        Config types, schema, loader
 │   │   ├── types.ts   CueConfig, ThemeConfig, SpeakerConfig, DEFAULT_CONFIG
@@ -34,7 +35,8 @@ cue/
 │   │   └── index.ts
 │   ├── frontend/      Prompter HTML + vanilla JS
 │   │   ├── index.ts   renderPage (HTML string builder)
-│   │   └── app.js     browser-side prompter logic
+│   │   ├── app.js     browser-side prompter logic
+│   │   └── markdown.ts  renderInlineMarkdown (server-side)
 │   ├── log/           LogTape setup
 │   │   └── logger.ts  initLogger
 │   ├── server/        Bun.serve + SSE
@@ -70,19 +72,22 @@ cue/
 - `server/` depends on `transcript/`, `config/`, `errors/`, and `log/`.
 - `frontend/` has no Node.js dependencies — it runs in the browser.
 - `cli/` depends on everything.
-- `src/index.ts` re-exports the public surface from `errors/`, `transcript/`, `config/`, `log/`.
+- `src/index.ts` re-exports the public surface from `errors/`, `transcript/`, `config/`, `log/`, `frontend/`, and `server/`.
 
 ## Public API surface
 
 `src/index.ts` exports:
 
 - `VERSION` — from package.json
-- `CueError`, `cueError` — error handling
-- `initLogger` — logging setup
+- `CueError`, `cueError`, `CueErrorCode`, `CueErrorContext` — error handling
+- `initLogger`, `getLogger` — logging setup
 - `defineConfig` — config helper
 - `loadConfig`, `resolveConfigPath` — config loading
-- `CueConfig`, `DEFAULT_CONFIG`, `ThemeConfig`, `SpeakerConfig` — config types
+- `CueConfig`, `DEFAULT_CONFIG`, `DEFAULT_THEME`, `ThemeConfig`, `SpeakerConfig`, `Column` — config types
 - `Cue`, `Transcript`, `TranscriptMeta`, `Speaker` — transcript types
 - `DEFAULT_SPEAKER`, `DEFAULT_WPM` — transcript defaults
-- `cueSchema`, `transcriptSchema` — Zod schemas
-- `parseTranscriptFile`, `estimateDuration`, `estimateDurations` — transcript operations
+- `cueSchema`, `transcriptSchema`, `ParsedCue`, `ParsedTranscript` — Zod schemas
+- `parseTranscriptFile`, `loadTranscript` — transcript loading
+- `estimateDuration`, `estimateDurations` — transcript operations
+- `renderInlineMarkdown` — inline markdown renderer
+- `serveTranscript`, `ServeHandle`, `ServeOptions` — server

@@ -9,6 +9,7 @@ export {
 	type ThemeConfig,
 } from './config/types.ts'
 export { CueError, cueError, type CueErrorCode, type CueErrorContext } from './errors/index.ts'
+export { renderInlineMarkdown } from './frontend/markdown.ts'
 export { getLogger, initLogger } from './log/logger.ts'
 export { type ServeHandle, type ServeOptions, serveTranscript } from './server/serve.ts'
 export { estimateDuration, estimateDurations } from './transcript/estimate.ts'

@@ -7,6 +7,8 @@ const APP_JS = await Bun.file(appUrl).text()
 export interface ClientConfig {
 	duet: boolean
 	fontSize: number
+	markdown: boolean
+	anchor: CueConfig['anchor']
 	theme: CueConfig['theme']
 	lightTheme: CueConfig['theme']
 	speakers: CueConfig['speakers']
@@ -26,6 +28,8 @@ export function renderPage(transcript: Transcript, config: CueConfig): string {
 		config: {
 			duet: config.duet || (transcript.meta.duet ?? false),
 			fontSize: config.fontSize,
+			markdown: config.markdown,
+			anchor: config.anchor,
 			theme: config.theme,
 			lightTheme: config.lightTheme,
 			speakers: config.speakers,
@@ -64,6 +68,7 @@ export function renderPage(transcript: Transcript, config: CueConfig): string {
   .state.done { color: var(--focus); }
   #stage { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; display: flex; gap: 2rem; padding: 2rem; align-items: flex-start; }
   .column { flex: 1 1 0; display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; }
+  .column.bottom { flex-direction: column-reverse; align-self: stretch; justify-content: flex-start; }
   .column.standalone, .solo { max-width: 60ch; margin: 0 auto; width: 100%; }
   .cue { line-height: 1.35; transition: opacity .25s ease, color .25s ease, font-size .15s ease; }
   .cue.focus { font-size: var(--font); color: var(--focus); font-weight: 600; }
@@ -72,9 +77,21 @@ export function renderPage(transcript: Transcript, config: CueConfig): string {
   .cue.next2 { font-size: calc(var(--font) * .5); color: var(--fade); }
   .cue.prev  { font-size: calc(var(--font) * .5); color: var(--fade); font-style: italic; }
   .fin { margin: auto; color: var(--dim); font-size: calc(var(--font) * .8); }
+  .cue code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; background: var(--fade); padding: 0 .25em; border-radius: .25em; }
+  .cue em { font-style: italic; }
+  .cue strong { font-weight: 700; }
+  .cue a { color: var(--accent); text-decoration: underline; }
+  #progressbar {
+    flex: 0 0 auto; height: 3px; background: var(--fade); position: relative;
+  }
+  #progressFill {
+    height: 100%; background: var(--accent); width: 0%;
+    transition: width .2s ease;
+  }
   #help {
     position: fixed; right: 1rem; bottom: 1rem; background: var(--bg); border: 1px solid var(--fade);
     border-radius: .5rem; padding: .75rem 1rem; font-size: .8rem; color: var(--dim); line-height: 1.7;
+    max-width: 16rem;
   }
   #help.hidden { display: none; }
   #help b { color: var(--focus); }
@@ -91,6 +108,7 @@ export function renderPage(transcript: Transcript, config: CueConfig): string {
     <span id="hint">press <kbd>?</kbd> for keys</span>
   </div>
   <div id="stage"></div>
+  <div id="progressbar"><div id="progressFill"></div></div>
   <div id="help" class="hidden">
     <b>keys</b><br/>
     <kbd>space</kbd>/<kbd>→</kbd> next cue<br/>
@@ -98,8 +116,8 @@ export function renderPage(transcript: Transcript, config: CueConfig): string {
     <kbd>p</kbd> play / pause auto-advance<br/>
     <kbd>r</kbd> restart<br/>
     <kbd>f</kbd> fullscreen<br/>
-    <kbd>+</kbd>/<kbd>−</kbd> font size<br/>
-    <kbd>t</kbd> toggle dark / light
+    <kbd>+</kbd>/<kbd>−</kbd> font size (saved)<br/>
+    <kbd>t</kbd> toggle dark / light (saved)<br/>
     <kbd>?</kbd> toggle this help
   </div>
   <script>window.__CUE__ = ${bootstrap};</script>

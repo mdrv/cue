@@ -3,7 +3,7 @@ mid: cue-issues
 label: "99 — Known Issues & Limitations"
 description: Open bugs, deferred features, design scope cuts
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T18:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -19,19 +19,31 @@ tags_excluded: []
 
 If the transcript file is edited rapidly (under 150ms debounce), the SSE reload event fires once but the `/api/transcript` fetch may return stale data from the previous write. Workaround: pause editing for 200ms before checking the result.
 
-### BUG-002: Frontend font size not persisted
+### BUG-002: Frontend font size not persisted (fixed in v0.0.2)
 
-Font size changes via `+`/`-` keys are lost on hot-reload because the page re-renders from the bootstrap data. The config `fontSize` is the authoritative source.
+Fixed: font size and theme choice now persist to `localStorage` keyed per transcript title (`cue:<title>:font`, `cue:<title>:light`). See [v0.0.2 release notes](./releases/v0.0.2.md).
 
 ### BUG-003: SSE reconnection on Firefox
 
 Firefox's EventSource does not support `reconnectInterval` natively. The built-in 1-second reconnect delay may cause flicker on network hiccups.
 
+### BUG-004: Markdown link regex truncates URLs with literal `)` (v0.0.2)
+
+The inline link regex uses `[^)\s]+` for the URL, so URLs containing `)` are truncated at the first close-paren. Workaround: percent-encode `)` as `%29`.
+
+### BUG-005: Markdown rendering is inline-only (v0.0.2)
+
+The renderer supports `**bold**`, `*italic*`, `` `code` ``, and `[label](url)` but no block-level constructs (headings, lists, blockquotes). Block-level support is deferred to v0.1.0.
+
+### BUG-006: `cue list --json` omits estimates without `--wpm` (v0.0.2)
+
+Cues without a `duration` only show an `estimated` field when `--wpm` is passed. Without it they appear un-timed in the JSON output.
+
 ## Limitations
 
-### Plain text only
+### Markdown is inline-only
 
-Cue renders cues as plain text. No markdown, no rich text, no HTML in cue content. This is a design choice — see [00 — Overview](./00-overview.md).
+Cue renders `**bold**`, `*italic*`, `` `code` ``, and `[label](url)` in cue text. Block-level markdown (headings, lists, blockquotes) is not supported — see v0.1.0 roadmap.
 
 ### Desktop only
 
@@ -49,6 +61,6 @@ Cue does not record audio or video. Pair with OBS, QuickTime, or similar for rec
 
 The prompter has no undo stack. `←` goes back one cue; `R` restarts from the beginning.
 
-### Config requires restart
+### Config hot-reload requires a resolved file
 
-Config changes (theme, speakers, columns) require restarting the cue server. Hot-reload only applies to transcript content.
+Editing the resolved config file triggers hot-reload. If Cue fell back to `DEFAULT_CONFIG` (no `--config`, no `./.cue/cue.ts`, no `~/.config/cue/cue.ts`), there is no file to watch.

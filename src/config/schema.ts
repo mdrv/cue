@@ -20,6 +20,8 @@ export const configSchema = z.object({
 	wpm: z.number().int().positive().default(DEFAULT_CONFIG.wpm),
 	duet: z.boolean().default(DEFAULT_CONFIG.duet),
 	fontSize: z.number().int().positive().default(DEFAULT_CONFIG.fontSize),
+	markdown: z.boolean().default(DEFAULT_CONFIG.markdown),
+	anchor: z.enum(['top', 'bottom']).default(DEFAULT_CONFIG.anchor),
 	theme: themeSchema.default(DEFAULT_CONFIG.theme),
 	lightTheme: themeSchema.default(LIGHT_THEME),
 	speakers: z.record(z.string(), speakerSchema).default(DEFAULT_CONFIG.speakers),

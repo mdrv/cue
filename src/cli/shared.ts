@@ -1,8 +1,9 @@
 import { Crust } from '@crustjs/core'
+import { CueError } from '../errors/index.ts'
 
 export const app = new Crust('cue').meta({
 	description: 'Dual-column transcript prompter — turn a .ts file into a teleprompter.',
-	usage: 'cue <file> [flags]\n       cue check <file>\n       cue init',
+	usage: 'cue <file> [flags]\n       cue check <file>\n       cue list <file>\n       cue init',
 }).flags({
 	// Global, inherited by every subcommand.
 	debug: { type: 'boolean', short: 'd', description: 'Verbose (debug) logging', inherit: true },
@@ -21,4 +22,35 @@ export interface GlobalFlags {
 	readonly debug?: boolean
 	readonly json?: boolean
 	readonly config?: string
+}
+
+type RunCtx<TArgs, TFlags> = { readonly args: TArgs; readonly flags: TFlags }
+type RunHandler<TArgs, TFlags> = (ctx: RunCtx<TArgs, TFlags>) => Promise<void> | void
+
+export function withErrors<TArgs, TFlags>(handler: RunHandler<TArgs, TFlags>): RunHandler<TArgs, TFlags> {
+	return async (ctx) => {
+		try {
+			await handler(ctx)
+		} catch (cause) {
+			reportError(cause)
+			process.exit(1)
+		}
+	}
+}
+
+export function reportError(cause: unknown): void {
+	if (cause instanceof CueError) {
+		process.stderr.write(`cue: ${cause.message}\n`)
+		const ctx = cause.context ?? {}
+		if (Array.isArray(ctx.issues)) {
+			for (const i of ctx.issues) process.stderr.write(`  - ${i}\n`)
+		}
+		for (const [k, v] of Object.entries(ctx)) {
+			if (k === 'issues') continue
+			process.stderr.write(`  ${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}\n`)
+		}
+		return
+	}
+	const msg = cause instanceof Error ? cause.message : String(cause)
+	process.stderr.write(`cue: ${msg}\n`)
 }

@@ -3,7 +3,7 @@ mid: cue-readme
 label: Cue Documentation Index
 description: Reading order, conventions, and entry point for Cue docs
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T18:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -59,6 +59,7 @@ These docs are the authoritative project plan. Each file is implementation-ready
 ### Releases
 
 - [v0.0.1](./releases/v0.0.1.md) — prototype slice (transcript loading, prompter UI, hot-reload, CLI)
+- [v0.0.2](./releases/v0.0.2.md) — daily driver polish (markdown, anchor, persistence, progress bar, config hot-reload, `cue list`, error messages)
 
 ## Conventions
 

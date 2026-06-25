@@ -3,7 +3,7 @@ mid: cue-architecture
 label: "01 — Architecture"
 description: Layered components, data flow, module boundaries
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T19:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -18,7 +18,7 @@ tags_excluded: []
 Cue is four layers, each consuming the one below:
 
 ```
-CLI (crustjs)           cue <file>  cue check  cue init
+CLI (crustjs)           cue <file>  cue check  cue list  cue init
     ↓
 Server (Bun.serve)      / → HTML   /api/transcript → JSON   /events → SSE
     ↓
@@ -37,15 +37,15 @@ Config (loader)        resolve → merge flags → CueConfig
 
 ## Module boundaries
 
-| Module            | Depends on                             | Async?                        | Tests                                    |
-| ----------------- | -------------------------------------- | ----------------------------- | ---------------------------------------- |
-| `src/errors/`     | nothing                                | no                            | inline                                   |
-| `src/log/`        | @logtape/logtape                       | yes (init)                    | inline                                   |
-| `src/config/`     | zod, @logtape                          | no (load is sync)             | tests/schema                             |
-| `src/transcript/` | zod, @logtape                          | no (load uses dynamic import) | tests/schema, tests/load, tests/estimate |
-| `src/server/`     | Bun.serve, Bun.watch, transcript types | yes                           | manual (browser)                         |
-| `src/frontend/`   | nothing (runtime: browser DOM)         | no (renderPage is sync)       | manual (browser)                         |
-| `src/cli/`        | all above, @crustjs/core               | yes                           | manual (CLI smoke)                       |
+| Module            | Depends on                             | Async?                               | Tests                                    |
+| ----------------- | -------------------------------------- | ------------------------------------ | ---------------------------------------- |
+| `src/errors/`     | nothing                                | no                                   | inline                                   |
+| `src/log/`        | @logtape/logtape                       | yes (init)                           | inline                                   |
+| `src/config/`     | zod, @logtape                          | yes (loadConfig uses dynamic import) | tests/schema                             |
+| `src/transcript/` | zod, @logtape                          | no (load uses dynamic import)        | tests/schema, tests/load, tests/estimate |
+| `src/server/`     | Bun.serve, Bun.watch, transcript types | yes                                  | manual (browser)                         |
+| `src/frontend/`   | nothing (runtime: browser DOM)         | no (renderPage is sync)              | manual (browser)                         |
+| `src/cli/`        | all above, @crustjs/core               | yes                                  | manual (CLI smoke)                       |
 
 ## Public API
 

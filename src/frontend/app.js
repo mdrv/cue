@@ -6,11 +6,42 @@
 	const cues = transcript.cues
 	const total = cues.length
 	const meta = transcript.meta || {}
-	const duet = !!(config.duet || meta.duet)
 	const darkTheme = config.theme
 	const lightTheme = config.lightTheme
-	let light = false
+	const STORAGE_PREFIX = 'cue:' + (meta.title ? encodeURIComponent(meta.title) : 'default')
 	const speakers = config.speakers || { main: { column: 'left' }, side: { column: 'right' } }
+
+	const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+	function escapeHtml(s) {
+		return s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c] ?? c)
+	}
+	function isSafeUrl(url) {
+		const t = url.trim()
+		if (/^(https?:|mailto:)/i.test(t)) return true
+		if (/^[/?#]/.test(t)) return true
+		if (/^\.\.?\//.test(t)) return true
+		if (!/^[a-z][a-z0-9+.-]*:/i.test(t)) return true
+		return false
+	}
+	function renderInlineMarkdown(input) {
+		const codeSpans = []
+		let s = escapeHtml(input)
+		s = s.replace(/`([^`]+)`/g, (_, c) => {
+			codeSpans.push(c)
+			return `\uE000${codeSpans.length - 1}\uE001`
+		})
+		s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text, url) => {
+			if (!isSafeUrl(url)) return text
+			return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`
+		})
+		s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+		s = s.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>')
+		s = s.replace(/\uE000(\d+)\uE001/g, (_m, i) => `<code>${codeSpans[Number(i)] ?? ''}</code>`)
+		return s
+	}
+	function renderText(text) {
+		return config.markdown !== false ? renderInlineMarkdown(text) : escapeHtml(text)
+	}
 
 	const columnOf = (sp) => {
 		const s = speakers[sp]
@@ -20,10 +51,41 @@
 	}
 	const colorOf = (sp) => (speakers[sp] && speakers[sp].color) || null
 
+	let light = loadBool('light', false)
 	let index = 0
 	let playing = false
 	let timer = null
-	let font = config.fontSize || 48
+	let font = loadNum('font', config.fontSize || 48)
+
+	function loadNum(key, fallback) {
+		try {
+			const v = localStorage.getItem(STORAGE_PREFIX + ':' + key)
+			if (v === null) return fallback
+			const n = Number(v)
+			return Number.isFinite(n) && n > 0 ? n : fallback
+		} catch (_) {
+			return fallback
+		}
+	}
+	function saveNum(key, value) {
+		try {
+			localStorage.setItem(STORAGE_PREFIX + ':' + key, String(value))
+		} catch (_) {}
+	}
+	function loadBool(key, fallback) {
+		try {
+			const v = localStorage.getItem(STORAGE_PREFIX + ':' + key)
+			if (v === null) return fallback
+			return v === '1'
+		} catch (_) {
+			return fallback
+		}
+	}
+	function saveBool(key, value) {
+		try {
+			localStorage.setItem(STORAGE_PREFIX + ':' + key, value ? '1' : '0')
+		} catch (_) {}
+	}
 
 	const stage = document.getElementById('stage')
 	const bar = document.getElementById('bar')
@@ -31,6 +93,7 @@
 	const progressEl = document.getElementById('progress')
 	const stateEl = document.getElementById('state')
 	const helpEl = document.getElementById('help')
+	const progressFill = document.getElementById('progressFill')
 
 	titleEl.textContent = meta.title || 'cue'
 	document.title = meta.title ? `${meta.title} — cue` : 'cue'
@@ -45,14 +108,12 @@
 		document.documentElement.style.setProperty('--font', font + 'px')
 	}
 
-	// Build a column: subset cues (with their global indices) and an "active" pointer.
 	function subsetFor(column) {
 		const out = []
 		for (let i = 0; i < total; i++) if (columnOf(cues[i].speaker || 'main') === column) out.push(i)
 		return out
 	}
 	function activeIn(subset) {
-		// latest subset cue whose global index <= playhead; -1 if none yet
 		let k = -1
 		for (let j = 0; j < subset.length; j++) if (subset[j] <= index) k = j
 		return k
@@ -66,7 +127,7 @@
 		const speaker = cue.speaker || 'main'
 		const col = colorOf(speaker)
 		if (col && role === 'focus') el.style.setProperty('--speaker', col)
-		el.textContent = cue.text
+		el.innerHTML = renderText(cue.text)
 		if (column) el.dataset.column = column
 		return el
 	}
@@ -75,8 +136,7 @@
 		const subset = subsetFor(column)
 		const active = activeIn(subset)
 		const wrap = document.createElement('div')
-		wrap.className = 'column'
-		// window: 1 prev (faded) + focus + 2 next (dim), hide the rest
+		wrap.className = 'column' + (config.anchor === 'bottom' ? ' bottom' : '')
 		for (let j = 0; j < subset.length; j++) {
 			const off = j - active
 			let role = null
@@ -84,9 +144,8 @@
 			else if (off === 1) role = 'next'
 			else if (off === 2) role = 'next2'
 			else if (off === -1) role = 'prev'
-			else if (off < -1) role = 'past'
+			else if (off < -1) continue
 			else continue
-			if (off < -1) continue // keep only the immediate previous visible
 			const el = cueEl(subset[j], role, column)
 			wrap.appendChild(el)
 		}
@@ -96,7 +155,7 @@
 
 	function renderSolo() {
 		const wrap = document.createElement('div')
-		wrap.className = 'column solo'
+		wrap.className = 'column solo' + (config.anchor === 'bottom' ? ' bottom' : '')
 		for (let j = 0; j < total; j++) {
 			const off = j - index
 			let role = null
@@ -120,7 +179,7 @@
 			fin.className = 'fin'
 			fin.textContent = '— end —'
 			stage.appendChild(fin)
-		} else if (duet) {
+		} else if (config.duet || meta.duet) {
 			stage.appendChild(renderColumn('left'))
 			stage.appendChild(renderColumn('right'))
 		} else {
@@ -129,6 +188,10 @@
 		progressEl.textContent = `${Math.min(index + 1, total)} / ${total}`
 		stateEl.textContent = index >= total ? 'done' : playing ? 'playing' : 'paused'
 		stateEl.className = 'state ' + (index >= total ? 'done' : playing ? 'playing' : 'paused')
+		if (progressFill) {
+			const pct = total > 0 ? (index / total) * 100 : 0
+			progressFill.style.width = pct + '%'
+		}
 		const f = stage.querySelector('.focus')
 		if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' })
 	}
@@ -181,14 +244,17 @@
 			else document.exitFullscreen?.()
 		} else if (k === '+' || k === '=') {
 			font = Math.min(160, font + 4)
+			saveNum('font', font)
 			render()
 		} else if (k === '-' || k === '_') {
 			font = Math.max(16, font - 4)
+			saveNum('font', font)
 			render()
 		} else if (k === '?') {
 			helpEl.classList.toggle('hidden')
 		} else if (k === 't' || k === 'T') {
 			light = !light
+			saveBool('light', light)
 			css()
 		} else if (k === 'Escape') {
 			helpEl.classList.add('hidden')
@@ -196,28 +262,31 @@
 	}
 	document.addEventListener('keydown', onKey)
 
-	// Click anywhere to advance (handy for mouse users)
 	stage.addEventListener('click', () => advance())
 
-	// Hot reload via SSE
+	function applyReload(data) {
+		if (!data) return
+		if (data.cues) {
+			transcript.cues = data.cues
+			transcript.meta = data.meta || transcript.meta
+			cues.length = 0
+			for (const c of data.cues) cues.push(c)
+			if (index > cues.length) index = cues.length
+		}
+		if (data.config) {
+			Object.assign(config, data.config)
+		}
+		render()
+		scheduleAuto()
+	}
+
 	function connect() {
 		try {
 			const es = new EventSource('/events')
 			es.addEventListener('reload', (ev) => {
 				try {
-					const data = JSON.parse(ev.data)
-					if (data && data.cues) {
-						transcript.cues = data.cues
-						transcript.meta = data.meta || transcript.meta
-						cues.length = 0
-						for (const c of data.cues) cues.push(c)
-						if (index > cues.length) index = cues.length
-						render()
-						scheduleAuto()
-					}
-				} catch (_) {
-					// ignore malformed payload
-				}
+					applyReload(JSON.parse(ev.data))
+				} catch (_) {}
 			})
 			es.onerror = () => {
 				try {
@@ -225,9 +294,7 @@
 				} catch (_) {}
 				setTimeout(connect, 2000)
 			}
-		} catch (_) {
-			// SSE unsupported — degrade silently
-		}
+		} catch (_) {}
 	}
 
 	render()

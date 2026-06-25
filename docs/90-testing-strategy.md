@@ -3,7 +3,7 @@ mid: cue-testing-strategy
 label: "90 — Testing Strategy"
 description: Unit tests, fixtures, test runner, coverage approach
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T12:00:00+07:00
+time_updated: 2026-06-25T19:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -24,6 +24,7 @@ tests/
 ├── schema.test.ts       Cue + Transcript Zod schema validation
 ├── estimate.test.ts     Duration estimation logic
 ├── load.test.ts          File loading + dynamic import
+├── markdown.test.ts     Inline markdown rendering (v0.0.2)
 └── fixtures/
     ├── valid.ts          Valid transcript export
     └── no-export.ts      File with no transcript export
@@ -34,13 +35,14 @@ tests/
 - **Schema validation** — valid cues, empty text rejection, negative duration rejection, bare array format, `{meta, cues}` format, empty cue list rejection, speaker default normalization.
 - **Duration estimation** — word-count scaling, empty text handling, selective filling (only missing durations).
 - **File loading** — valid file load + parse, missing file error, missing export error.
+- **Inline markdown** — HTML escaping, bold/italic, inline code protection, safe links, blocked schemes, relative URLs, plain text passthrough (v0.0.2).
 
 ## What is NOT tested (manual verification)
 
 - **Server routes** — tested manually via browser (see live test workflow).
 - **Frontend rendering** — tested manually via Firefox MCP.
 - **Hot-reload** — tested manually by editing the transcript file while the server runs.
-- **CLI output** — tested manually via `cue --help`, `cue check`, `cue init`.
+- **CLI output** — tested manually via `cue --help`, `cue check`, `cue list`, `cue init`.
 
 ## Running tests
 
