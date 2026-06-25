@@ -3,7 +3,7 @@ mid: cue-project-layout
 label: "03 — Project Layout"
 description: Source tree, module boundaries, public API surface
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T19:00:00+07:00
+time_updated: 2026-06-25T20:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -53,9 +53,11 @@ cue/
 │   ├── schema.test.ts
 │   ├── estimate.test.ts
 │   ├── load.test.ts
+│   ├── markdown.test.ts
 │   └── fixtures/
 │       ├── valid.ts
-│       └── no-export.ts
+│       ├── no-export.ts
+│       └── dup-ids.ts
 ├── examples/
 │   └── demo.ts
 ├── docs/              This plan
@@ -83,7 +85,7 @@ cue/
 - `initLogger`, `getLogger` — logging setup
 - `defineConfig` — config helper
 - `loadConfig`, `resolveConfigPath` — config loading
-- `CueConfig`, `DEFAULT_CONFIG`, `DEFAULT_THEME`, `ThemeConfig`, `SpeakerConfig`, `Column` — config types
+- `CueConfig`, `DEFAULT_CONFIG`, `DEFAULT_THEME`, `LIGHT_THEME`, `ThemeConfig`, `SpeakerConfig`, `Column`, `Anchor`, `FocusStyle` — config types
 - `Cue`, `Transcript`, `TranscriptMeta`, `Speaker` — transcript types
 - `DEFAULT_SPEAKER`, `DEFAULT_WPM` — transcript defaults
 - `cueSchema`, `transcriptSchema`, `ParsedCue`, `ParsedTranscript` — Zod schemas

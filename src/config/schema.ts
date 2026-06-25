@@ -22,6 +22,7 @@ export const configSchema = z.object({
 	fontSize: z.number().int().positive().default(DEFAULT_CONFIG.fontSize),
 	markdown: z.boolean().default(DEFAULT_CONFIG.markdown),
 	anchor: z.enum(['top', 'bottom']).default(DEFAULT_CONFIG.anchor),
+	focusStyle: z.enum(['opacity', 'underline', 'box']).default(DEFAULT_CONFIG.focusStyle),
 	theme: themeSchema.default(DEFAULT_CONFIG.theme),
 	lightTheme: themeSchema.default(LIGHT_THEME),
 	speakers: z.record(z.string(), speakerSchema).default(DEFAULT_CONFIG.speakers),

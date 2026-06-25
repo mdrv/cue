@@ -33,6 +33,12 @@ cue transcript.ts
 - **Scroll anchor** — `anchor: 'top'` (default) pins focus to top, `anchor: 'bottom'` pins it to the bottom so content scrolls down
 - **Progress bar** — thin position indicator at the bottom
 - **Persistence** — font size and theme saved per transcript via `localStorage`
+- **Sections** — `section: 'Act I'` per cue with sticky header, inline dividers, and `[`/`]` navigation
+- **Presenter notes** — `{ notes: 'whisper this' }` off-stage panel toggled by `N`
+- **Cue ids** — `{ id: 'welcome' }` stable handle with `?id=deep-link`
+- **Pronunciation hints** — `{ say: 'ROONZ' }` small dim italic text above cue
+- **Focus styles** — `focusStyle: 'opacity' | 'underline' | 'box'` for extra emphasis
+- **Speaker color borders** — colored left edge on every cue from `SpeakerConfig.color`
 - **Optional config** — `~/.config/cue/cue.ts` for theme, speakers, and defaults
 - **Vanilla frontend** — no build step, no framework, single HTML page
 
@@ -53,6 +59,10 @@ Each cue has:
 - `text` (required) — the content to display
 - `duration` (optional) — auto-advance delay in milliseconds
 - `speaker` (optional) — speaker tag, defaults to `"main"`
+- `section` (optional) — section name for sticky headers and dividers
+- `notes` (optional) — presenter notes, shown in off-stage panel
+- `id` (optional) — stable handle for `?id=deep-linking`
+- `say` (optional) — pronunciation hint shown above cue text
 
 ## CLI
 
@@ -104,7 +114,10 @@ Resolution order: `--config` → `./.cue/cue.ts` → `~/.config/cue/cue.ts` → 
 | `R`                     | Restart              |
 | `F`                     | Fullscreen           |
 | `T`                     | Toggle theme (saved) |
-| `+` / `-`               | Font size            |
+| `+` / `-`               | Font size (saved)    |
+| `[`                     | Previous section     |
+| `]`                     | Next section         |
+| `N`                     | Toggle notes panel   |
 | `?`                     | Help                 |
 
 ## Programmatic API

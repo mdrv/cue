@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { CueError } from '../src/errors/index.ts'
-import { parseTranscriptFile } from '../src/transcript/load.ts'
+import { loadTranscript, parseTranscriptFile } from '../src/transcript/load.ts'
 
 const fixtures = join(import.meta.dir, 'fixtures')
 
@@ -17,4 +17,30 @@ test('parseTranscriptFile throws LOAD on missing file', async () => {
 
 test('parseTranscriptFile throws PARSE on missing transcript export', async () => {
 	expect(parseTranscriptFile(join(fixtures, 'no-export.ts'))).rejects.toBeInstanceOf(CueError)
+})
+
+test('loadTranscript preserves section / notes / id / say fields (v0.0.3)', async () => {
+	const t = await loadTranscript(join(fixtures, 'valid.ts'))
+	expect(t.cues[0]?.section).toBe('Intro')
+	expect(t.cues[0]?.id).toBe('a')
+	expect(t.cues[1]?.notes).toBe('whisper')
+	expect(t.cues[1]?.section).toBe('Intro')
+})
+
+test('loadTranscript rejects duplicate ids (v0.0.3)', async () => {
+	const p = loadTranscript(join(fixtures, 'dup-ids.ts'))
+	let caught: CueError | undefined
+	try {
+		await p
+	} catch (e) {
+		caught = e as CueError
+	}
+	expect(caught).toBeInstanceOf(CueError)
+	expect(caught?.code).toBe('PARSE')
+	const issues = caught?.context.issues
+	expect(Array.isArray(issues)).toBe(true)
+	const first = (issues as string[])[0] ?? ''
+	expect(first).toContain('dup')
+	expect(first).toContain('#1')
+	expect(first).toContain('#2')
 })

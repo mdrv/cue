@@ -3,7 +3,7 @@ mid: cue-roadmap
 label: "99 — Roadmap"
 description: Phased delivery plan for Cue
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T19:00:00+07:00
+time_updated: 2026-06-25T20:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -27,14 +27,25 @@ Transcript loading, validation, duration estimation, prompter UI with look-ahead
 - **`cue list` command** — richer than `check`: numbered cue list with previews, speakers, durations, and totals.
 - **Improved error messages** — Zod issues are mapped to `cue #N "<preview>" — <field>: <message>` with context fields printed by the CLI.
 
+## v0.0.3 — Section-aware (done)
+
+- **Sections** — `section: 'Act I'` per cue. Sticky section header, per-column dividers at boundaries, per-section mini progress.
+- **Section navigation** — `[` / `]` keys jump to the previous / next section boundary.
+- **`cue list` grouping** — plain output groups cues by section with subtotals; `--json` adds a `sections` array.
+- **Presenter notes** — `{ notes: 'whisper this' }`. Off-stage panel toggled by `N`, persisted per transcript.
+- **Cue ids and deep-linking** — `{ id: 'welcome' }` stable handle. URL `?id=welcome` jumps to the matching cue on load. Uniqueness enforced.
+- **Pronunciation hints** — `{ say: 'ROONZ' }`. Small dim italic text above the cue.
+- **Speaker color border** — every cue carries a left-edge color from `SpeakerConfig.color` (visible on all cues, not just focus).
+- **Focus style modes** — `focusStyle: 'opacity' | 'underline' | 'box'` config adds extra emphasis on the focus cue.
+
 ## v0.1.0 — Feature-complete and tested (next)
 
 Goal: every public surface is exercised by humans and automatic tests, and the prototype no longer feels like a prototype.
 
 - **Human-tested workflows** — record-and-replay passes over play/check/list/init.
-- **Browser tests** — Playwright suite covering duet, timing, hot-reload, markdown rendering, and keyboard controls.
+- **Browser tests** — Playwright suite covering duet, timing, hot-reload, markdown rendering, sections, notes, and keyboard controls.
 - **Full CommonMark** — extend the inline renderer to block-level markdown (headings, lists, blockquotes).
-- **Presenter notes / script mode** — split cues into a prompter view and an off-screen notes section.
+- **Script mode** — built on v0.0.3 notes: render notes as the primary view alongside or instead of cue text.
 - **Image cue type** — `{ image: 'url' }` for visual prompts.
 - **Countdown timer** — optional overlay for timed cues.
 - **Export** — `cue export --format html` for offline sharing.

@@ -8,6 +8,7 @@ const log = getLogger(['cue', 'transcript'])
 
 export async function loadTranscript(filePath: string): Promise<Transcript> {
 	const parsed = await parseTranscriptFile(filePath)
+	checkUniqueIds(parsed.cues, filePath)
 	const speakers = uniqueSpeakers(parsed.cues)
 	log.info('Loaded transcript {file} ({count} cues, {speakers} speakers)', {
 		file: filePath,
@@ -95,4 +96,20 @@ function uniqueSpeakers(cues: readonly { speaker?: string }[]): string[] {
 	const set = new Set<string>()
 	for (const c of cues) if (c.speaker) set.add(c.speaker)
 	return [...set]
+}
+
+function checkUniqueIds(cues: readonly { id?: string }[], file: string): void {
+	const seen = new Map<string, number[]>()
+	cues.forEach((c, i) => {
+		if (!c.id) return
+		const arr = seen.get(c.id) ?? []
+		arr.push(i)
+		seen.set(c.id, arr)
+	})
+	const dupes = [...seen.entries()].filter(([, idxs]) => idxs.length > 1)
+	if (dupes.length === 0) return
+	const issues = dupes.map(
+		([id, idxs]) => `cue.id "${id}" appears at cues ${idxs.map((n) => `#${n + 1}`).join(', ')}`,
+	)
+	throw cueError('PARSE', `Duplicate cue id in ${file}`, { file, issues })
 }

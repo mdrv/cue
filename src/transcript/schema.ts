@@ -5,6 +5,10 @@ export const cueSchema = z.object({
 	text: z.string().min(1, 'cue.text must be a non-empty string'),
 	duration: z.number().int().positive('cue.duration must be a positive integer (ms)').optional(),
 	speaker: z.string().min(1).optional(),
+	section: z.string().min(1).optional(),
+	notes: z.string().optional(),
+	id: z.string().min(1).optional(),
+	say: z.string().optional(),
 })
 
 export const transcriptMetaSchema = z
@@ -37,6 +41,10 @@ export const transcriptSchema = z
 				text: c.text,
 				duration: c.duration,
 				speaker: c.speaker ?? DEFAULT_SPEAKER,
+				section: c.section,
+				notes: c.notes,
+				id: c.id,
+				say: c.say,
 			})),
 		}
 	})

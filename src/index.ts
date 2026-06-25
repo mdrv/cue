@@ -5,6 +5,7 @@ export {
 	type CueConfig,
 	DEFAULT_CONFIG,
 	DEFAULT_THEME,
+	type FocusStyle,
 	type SpeakerConfig,
 	type ThemeConfig,
 } from './config/types.ts'

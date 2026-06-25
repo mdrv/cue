@@ -4,6 +4,10 @@ export interface Cue {
 	readonly text: string
 	readonly duration?: number
 	readonly speaker?: Speaker
+	readonly section?: string
+	readonly notes?: string
+	readonly id?: string
+	readonly say?: string
 }
 
 export interface TranscriptMeta {

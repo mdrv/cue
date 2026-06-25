@@ -3,7 +3,7 @@ mid: cue-cli-surface
 label: "05 — CLI Surface"
 description: cue commands, flags, exit codes, output formats
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T18:00:00+07:00
+time_updated: 2026-06-25T20:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -36,13 +36,32 @@ cue check --json transcript.ts
 
 ### `cue list <file>` (v0.0.2)
 
-Prints a numbered, per-cue breakdown of a transcript — richer than `check`. Each row shows the speaker, duration (or `~Xms` estimate with `--wpm`), and a 80-char preview of the cue text. Ends with a totals line.
+Prints a numbered, per-cue breakdown of a transcript — richer than `check`. Each row shows the speaker, duration (or `~Xms` estimate with `--wpm`), inline tags (`#id`, `say:`, `notes`), and a 80-char preview of the cue text. As of v0.0.3, output is **grouped by section**: a `# Section` header introduces each group, followed by its cues and a `— section:` subtotal line.
 
 ```sh
 cue list transcript.ts
 cue list --json transcript.ts
 cue list --wpm 180 transcript.ts
 ```
+
+Plain output example (v0.0.3):
+
+```
+✓ demo.ts "Cue Demo" — 6 cues, speakers: main, side
+
+# Intro
+  1. [main] (3000ms) #welcome notes Hello and welcome to the show!
+  2. [side] (—) say:BUN Today we are looking at Bun and Svelte.
+  — section: 3000ms timed, 1 manual cue
+
+# Main
+  3. [main] (4000ms) #idea The first idea is simple...
+  — section: 4000ms timed, 0 manual cues
+
+Total: 7000ms timed, 1 manual cue
+```
+
+When the transcript has no sections, no group headers are printed and output matches the v0.0.2 flat format.
 
 ### `cue init`
 
@@ -107,7 +126,7 @@ When `--json` is set, `check` emits structured JSON:
 }
 ```
 
-`list --json` emits a deeper structure:
+`list --json` emits a deeper structure (v0.0.3 adds per-cue `section`, `notes`, `id`, `say`, plus a top-level `sections` array):
 
 ```json
 {
@@ -115,8 +134,32 @@ When `--json` is set, `check` emits structured JSON:
 	"file": "transcript.ts",
 	"meta": { "title": "Episode 1", "wpm": 160, "duet": true },
 	"cues": [
-		{ "index": 0, "text": "...", "speaker": "main", "duration": 3000 },
-		{ "index": 1, "text": "...", "speaker": "side", "estimated": 1500 }
+		{
+			"index": 1,
+			"text": "...",
+			"speaker": "main",
+			"section": "Intro",
+			"duration": 3000,
+			"id": "welcome",
+			"notes": "..."
+		},
+		{
+			"index": 2,
+			"text": "...",
+			"speaker": "side",
+			"section": "Intro",
+			"say": "BUN"
+		}
+	],
+	"sections": [
+		{
+			"name": "Intro",
+			"start": 1,
+			"end": 2,
+			"count": 2,
+			"speakers": ["main", "side"],
+			"totalDuration": 3000
+		}
 	],
 	"summary": {
 		"count": 6,

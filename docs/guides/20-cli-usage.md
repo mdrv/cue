@@ -3,7 +3,7 @@ mid: cue-guide-cli-usage
 label: "20 — CLI Usage Guide"
 description: Practical walkthrough of using cue from the command line
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T19:00:00+07:00
+time_updated: 2026-06-25T20:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -97,6 +97,26 @@ cue list --wpm 180 my-transcript.ts   # show estimated durations for manual cues
 cue list --json my-transcript.ts      # machine-readable JSON output
 ```
 
+When cues have `section` tags, `cue list` groups output by section with per-group subtotals:
+
+```sh
+cue list sections.ts
+# ✓ sections.ts "Demo" — 6 cues, speakers: main, side
+#
+# # Intro
+#   1. [main] (3000ms) #welcome notes Hello and welcome to the show!
+#   2. [side] (—) say:BUN Today we are looking at Bun and Svelte.
+#   — section: 3000ms timed, 1 manual cue
+#
+# # Main
+#   3. [main] (4000ms) #idea The first idea is simple...
+#   — section: 4000ms timed, 0 manual cues
+#
+# Total: 7000ms timed, 1 manual cue
+```
+
+Inline tags appear next to each cue row: `#id`, `say:text`, and a `notes` marker. These are purely informational — they help you confirm your cue metadata is correct.
+
 ## Initialize config
 
 Create a starter config file:
@@ -117,6 +137,8 @@ import { defineConfig } from '@mdrv/cue'
 export default defineConfig({
 	fontSize: 56,
 	anchor: 'top',
+	focusStyle: 'opacity',
+	markdown: true,
 	theme: {
 		background: '#1a1a2e',
 		focus: '#eaeaea',

@@ -8,6 +8,7 @@ export interface ThemeConfig {
 
 export type Column = 'left' | 'right'
 export type Anchor = 'top' | 'bottom'
+export type FocusStyle = 'opacity' | 'underline' | 'box'
 
 export interface SpeakerConfig {
 	readonly column: Column
@@ -22,6 +23,7 @@ export interface CueConfig {
 	readonly fontSize: number
 	readonly markdown: boolean
 	readonly anchor: Anchor
+	readonly focusStyle: FocusStyle
 	readonly theme: ThemeConfig
 	readonly lightTheme: ThemeConfig
 	readonly speakers: Record<string, SpeakerConfig>
@@ -50,6 +52,7 @@ export const DEFAULT_CONFIG: CueConfig = {
 	fontSize: 48,
 	markdown: true,
 	anchor: 'top',
+	focusStyle: 'opacity',
 	theme: DEFAULT_THEME,
 	lightTheme: LIGHT_THEME,
 	speakers: {

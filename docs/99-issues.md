@@ -3,7 +3,7 @@ mid: cue-issues
 label: "99 — Known Issues & Limitations"
 description: Open bugs, deferred features, design scope cuts
 time_created: 2026-06-25T12:00:00+07:00
-time_updated: 2026-06-25T18:00:00+07:00
+time_updated: 2026-06-25T20:00:00+07:00
 scores:
   cue: 1000
   mdrv/cue: 1000
@@ -38,6 +38,10 @@ The renderer supports `**bold**`, `*italic*`, `` `code` ``, and `[label](url)` b
 ### BUG-006: `cue list --json` omits estimates without `--wpm` (v0.0.2)
 
 Cues without a `duration` only show an `estimated` field when `--wpm` is passed. Without it they appear un-timed in the JSON output.
+
+### BUG-007: Sections / notes / ids / pronunciation untested in browser (v0.0.3)
+
+The v0.0.3 prompter features (sticky section bar, dividers, notes panel, pronunciation hints, focus styles, speaker-color borders, `?id=` deep-linking, `[`/`]` navigation) are covered by unit and CLI tests but **not yet by automated browser tests**. Visual verification has been manual via the Firefox MCP. Playwright is scheduled for v0.1.0.
 
 ## Limitations
 

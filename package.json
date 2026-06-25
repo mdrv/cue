@@ -1,6 +1,6 @@
 {
 	"name": "@mdrv/cue",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"type": "module",
 	"bin": {
 		"cue": "src/cli/index.ts"

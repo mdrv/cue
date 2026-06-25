@@ -17,6 +17,28 @@ test('cueSchema rejects non-positive duration', () => {
 	expect(cueSchema.safeParse({ text: 'x', duration: 3.5 }).success).toBe(false)
 })
 
+test('cueSchema accepts section / notes / id / say (v0.0.3)', () => {
+	const r = cueSchema.safeParse({
+		text: 'hello',
+		section: 'Intro',
+		notes: 'whisper this',
+		id: 'welcome',
+		say: 'hel-LO',
+	})
+	expect(r.success).toBe(true)
+	if (r.success) {
+		expect(r.data.section).toBe('Intro')
+		expect(r.data.notes).toBe('whisper this')
+		expect(r.data.id).toBe('welcome')
+		expect(r.data.say).toBe('hel-LO')
+	}
+})
+
+test('cueSchema rejects empty section / id strings', () => {
+	expect(cueSchema.safeParse({ text: 'x', section: '' }).success).toBe(false)
+	expect(cueSchema.safeParse({ text: 'x', id: '' }).success).toBe(false)
+})
+
 test('transcriptSchema accepts a bare array of cues', () => {
 	const r = transcriptSchema.parse([
 		{ text: 'a', duration: 1000 },
