@@ -1,15 +1,3 @@
-const HTML_ESCAPES: Record<string, string> = {
-	'&': '&amp;',
-	'<': '&lt;',
-	'>': '&gt;',
-	'"': '&quot;',
-	"'": '&#39;',
-}
-
-function escapeHtml(input: string): string {
-	return input.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c] ?? c)
-}
-
 function isSafeUrl(url: string): boolean {
 	const trimmed = url.trim()
 	if (/^(https?:|mailto:)/i.test(trimmed)) return true
@@ -19,19 +7,39 @@ function isSafeUrl(url: string): boolean {
 	return false
 }
 
-export function renderInlineMarkdown(input: string): string {
-	const codeSpans: string[] = []
-	let s = escapeHtml(input)
-	s = s.replace(/`([^`]+)`/g, (_, content: string) => {
-		codeSpans.push(content)
-		return `\uE000${codeSpans.length - 1}\uE001`
+const UNSAFE_ELEMENTS = 'script, style, iframe, object, embed, form'
+
+const sanitize = new HTMLRewriter()
+	.on(UNSAFE_ELEMENTS, {
+		element(el) {
+			el.remove()
+		},
 	})
-	s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, text: string, url: string) => {
-		if (!isSafeUrl(url)) return text
-		return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`
+	.on('*', {
+		element(el) {
+			for (const [name] of el.attributes) {
+				if (name.toLowerCase().startsWith('on')) el.removeAttribute(name)
+			}
+		},
 	})
-	s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-	s = s.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1<em>$2</em>')
-	s = s.replace(/\uE000(\d+)\uE001/g, (_m, i: string) => `<code>${codeSpans[Number(i)] ?? ''}</code>`)
-	return s
+	.on('[href], [src]', {
+		element(el) {
+			for (const attr of ['href', 'src']) {
+				const value = el.getAttribute(attr)
+				if (value !== null && !isSafeUrl(value)) el.removeAttribute(attr)
+			}
+		},
+	})
+	.on('a', {
+		element(el) {
+			const href = el.getAttribute('href')
+			if (href === null || !isSafeUrl(href)) return
+			el.setAttribute('target', '_blank')
+			el.setAttribute('rel', 'noopener noreferrer')
+		},
+	})
+
+export async function renderMarkdown(input: string): Promise<string> {
+	const html = Bun.markdown.html(input, { noHtmlBlocks: true, noHtmlSpans: true })
+	return await sanitize.transform(new Response(html)).text()
 }

@@ -1,7 +1,8 @@
 {
 	"name": "@mdrv/cue",
-	"version": "0.0.3",
+	"version": "0.1.0",
 	"type": "module",
+	"license": "MIT",
 	"bin": {
 		"cue": "src/cli/index.ts"
 	},
@@ -13,20 +14,20 @@
 		"fmt": "dprint fmt",
 		"fmt:check": "dprint check",
 		"cli": "bun src/cli/index.ts",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "bun check"
 	},
 	"dependencies": {
-		"@crustjs/core": "^0.0.19",
-		"@crustjs/plugins": "^0.1.2",
-		"@logtape/logtape": "^2.2.0",
-		"@logtape/pretty": "^2.2.0",
-		"zod": "^4.4.3"
+		"@crustjs/core": "^0.5.6",
+		"@crustjs/extensions": "^0.5.6",
+		"@logtape/logtape": "^2.4.2",
+		"@logtape/pretty": "^2.4.2",
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
-		"@types/bun": "latest",
-		"typescript": "^5.7.0"
+		"@types/bun": "^1.4.4",
+		"typescript": "^7.0.2"
 	},
 	"engines": {
-		"bun": "^1.3.0"
+		"bun": "^1.4.4"
 	}
 }

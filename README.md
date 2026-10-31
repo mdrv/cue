@@ -1,6 +1,9 @@
-# @mdrv/cue
+# cue
 
 > Dual-column transcript prompter — turn a `.ts` file into a teleprompter.
+
+> [!CAUTION]
+> **Personal software, maintained for the author only.** The repo is public so the CI and install pipeline have a home, not because it is a supported product. Development is heavily LLM-assisted: most commits are written with AI agents and verified only against the author's own apps. Expect breaking changes at any minor bump — no support, no stability guarantee, no release schedule. Use it, fork it, but you're on your own.
 
 Cue is a Bun-powered prompter for read-aloud sessions, voice-overs, and side-by-side script reading. Feed it a TypeScript transcript file and it spins up a local server with an interactive teleprompter frontend.
 
@@ -29,7 +32,7 @@ cue transcript.ts
 - **Duet mode** — two-column layout for partner reading or translations
 - **Hybrid timing** — auto-advance by duration (ms) or manual keypress, mixed freely
 - **Hot-reload** — edit transcript or config, changes appear instantly via SSE
-- **Inline markdown** — `**bold**`, `*italic*`, `` `code` ``, `[label](url)` in cue text
+- **Markdown in cues** — `**bold**`, `*italic*`, `` `code` ``, `[label](url)`, plus GFM tables, lists, and headings — rendered safely, with raw HTML and unsafe URLs stripped
 - **Scroll anchor** — `anchor: 'top'` (default) pins focus to top, `anchor: 'bottom'` pins it to the bottom so content scrolls down
 - **Progress bar** — thin position indicator at the bottom
 - **Persistence** — font size and theme saved per transcript via `localStorage`
@@ -66,7 +69,7 @@ Each cue has:
 
 ## CLI
 
-````sh
+```sh
 cue <file>                  # start prompter
 cue <file> --duet           # force dual-column layout
 cue <file> --estimate       # auto-fill missing durations
@@ -74,10 +77,11 @@ cue <file> --port 8080      # custom port
 cue <file> --no-open        # don't open browser
 cue check <file>            # validate transcript
 cue check <file> --json     # validate, output JSON
-cue list <file>           # numbered per-cue breakdown
-cue list <file> --json    # richer JSON than check
-cue list <file> --wpm 180 # show ~Xms estimates for untimed cues
+cue list <file>             # numbered per-cue breakdown
+cue list <file> --json      # richer JSON than check
+cue list <file> --wpm 180   # show ~Xms estimates for untimed cues
 cue init                    # create sample config
+```
 
 ## Config
 
@@ -100,7 +104,7 @@ export default defineConfig({
 		side: { column: 'right', color: '#fca5a5' },
 	},
 })
-````
+```
 
 Resolution order: `--config` → `./.cue/cue.ts` → `~/.config/cue/cue.ts` → defaults.
 
@@ -128,17 +132,20 @@ import {
 	estimateDurations,
 	loadConfig,
 	parseTranscriptFile,
-	renderInlineMarkdown,
+	renderMarkdown,
 	VERSION,
 } from '@mdrv/cue'
 
 const transcript = await parseTranscriptFile('./script.ts')
 const filled = estimateDurations(transcript.cues, 160)
+const html = await renderMarkdown('**hello** world')
 ```
+
+`renderMarkdown` renders full GFM markdown to an HTML string, sanitized: raw HTML is neutralized, event-handler attributes and scripts are stripped, and link/image URLs are restricted to safe schemes.
 
 ## Requirements
 
-- **Bun** ^1.3.0
+- **Bun** ^1.4.4
 
 ## License
 
