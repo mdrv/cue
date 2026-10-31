@@ -1,33 +1,15 @@
 import type { CueConfig } from '../config/types.ts'
 import type { Transcript } from '../transcript/types.ts'
+import type { ClientConfig, ClientData } from './types.ts'
 
-const appUrl = new URL('./app.js', import.meta.url)
-const APP_JS = await Bun.file(appUrl).text()
+export type { ClientConfig, ClientData }
 
-export interface ClientConfig {
-	duet: boolean
-	fontSize: number
-	markdown: boolean
-	anchor: CueConfig['anchor']
-	flow: CueConfig['flow']
-	reverse: CueConfig['reverse']
-	lookBehind: number
-	lookAhead: number
-	chrome: CueConfig['chrome']
-	contentWidth: number
-	focusStyle: CueConfig['focusStyle']
-	theme: CueConfig['theme']
-	lightTheme: CueConfig['theme']
-	speakers: CueConfig['speakers']
-}
-
-export interface ClientData {
-	transcript: {
-		meta: Transcript['meta']
-		cues: Transcript['cues']
-	}
-	config: ClientConfig
-}
+const appUrl = new URL('./app.ts', import.meta.url)
+const bundle = await Bun.build({ entrypoints: [appUrl.pathname], target: 'browser' })
+if (!bundle.success) throw new Error(`cue: frontend bundle failed — ${bundle.logs.map(String).join('; ')}`)
+const artifact = bundle.outputs.at(0)
+if (!artifact) throw new Error('cue: frontend bundle produced no output')
+const APP_JS = await artifact.text()
 
 export function renderPage(transcript: Transcript, config: CueConfig): string {
 	const data: ClientData = {

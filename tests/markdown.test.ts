@@ -1,44 +1,35 @@
-import { expect, test } from 'bun:test'
-import { renderMarkdown } from '../src/frontend/markdown.ts'
+import { describe, expect, test } from 'bun:test'
+import { escapeHtml, isSafeUrl, renderInlineMarkdown, renderText } from '../src/frontend/inlineMarkdown.ts'
 
-test('renderMarkdown neutralizes raw HTML', async () => {
-	const out = await renderMarkdown('<script>alert(1)</script>')
-	expect(out).not.toContain('<script')
-})
+describe('markdown', () => {
+	test('escapes raw html', () => {
+		expect(escapeHtml('<img src=x onerror=alert(1)>')).toBe('&lt;img src=x onerror=alert(1)&gt;')
+	})
 
-test('renderMarkdown renders bold and italic', async () => {
-	expect(await renderMarkdown('**bold**')).toContain('<strong>bold</strong>')
-	expect(await renderMarkdown('*italic*')).toContain('<em>italic</em>')
-	expect(await renderMarkdown('**a** and *b*')).toContain('<strong>a</strong> and <em>b</em>')
-})
+	test('blocks unsafe link schemes', () => {
+		expect(isSafeUrl('javascript:alert(1)')).toBe(false)
+		expect(isSafeUrl('JAVASCRIPT:alert(1)')).toBe(false)
+		expect(isSafeUrl('data:text/html,x')).toBe(false)
+		expect(isSafeUrl('https://example.com')).toBe(true)
+		expect(isSafeUrl('mailto:a@b.c')).toBe(true)
+		expect(isSafeUrl('/local/path')).toBe(true)
+		expect(isSafeUrl('../rel')).toBe(true)
+	})
 
-test('renderMarkdown renders inline code', async () => {
-	expect(await renderMarkdown('use `foo`')).toContain('<code>foo</code>')
-})
+	test('renders inline markdown', () => {
+		expect(renderInlineMarkdown('**bold** *em*')).toBe('<strong>bold</strong> <em>em</em>')
+		expect(renderInlineMarkdown('`code`')).toBe('<code>code</code>')
+		expect(renderInlineMarkdown('[x](https://e.com)')).toBe(
+			'<a href="https://e.com" target="_blank" rel="noopener noreferrer">x</a>',
+		)
+	})
 
-test('renderMarkdown renders links with safe href', async () => {
-	const out = await renderMarkdown('[Bun](https://bun.sh)')
-	expect(out).toContain('<a href="https://bun.sh"')
-	expect(out).toContain('rel="noopener noreferrer"')
-})
+	test('drops unsafe links but keeps text', () => {
+		expect(renderInlineMarkdown('[x](javascript:alert(1))')).toBe('x)')
+	})
 
-test('renderMarkdown blocks unsafe link schemes', async () => {
-	expect(await renderMarkdown('[x](javascript:alert)')).not.toContain('<a ')
-	expect(await renderMarkdown('[x](data:foo)')).not.toContain('<a ')
-})
-
-test('renderMarkdown allows relative links', async () => {
-	expect(await renderMarkdown('[a](/path)')).toContain('<a href="/path"')
-	expect(await renderMarkdown('[a](./relative)')).toContain('<a href="./relative"')
-	expect(await renderMarkdown('[a](#anchor)')).toContain('<a href="#anchor"')
-})
-
-test('renderMarkdown supports GFM tables', async () => {
-	const out = await renderMarkdown('| a | b |\n| - | - |\n| 1 | 2 |')
-	expect(out).toContain('<table>')
-	expect(out).toContain('<td>1</td>')
-})
-
-test('renderMarkdown leaves plain text untouched', async () => {
-	expect(await renderMarkdown('just a plain cue')).toContain('just a plain cue')
+	test('renderText respects the markdown flag', () => {
+		expect(renderText('<b>hi</b>', false)).toBe('&lt;b&gt;hi&lt;/b&gt;')
+		expect(renderText('**hi**', true)).toBe('<strong>hi</strong>')
+	})
 })

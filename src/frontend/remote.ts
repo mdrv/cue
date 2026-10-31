@@ -2,6 +2,10 @@ import type { CueConfig } from '../config/types.ts'
 import type { PresenterState } from '../server/present.ts'
 import type { LoadedTranscript } from '../transcript/types.ts'
 
+const remoteScript = new URL('./remoteMain.ts', import.meta.url)
+const transpiler = new Bun.Transpiler({ loader: 'ts' })
+const REMOTE_JS = transpiler.transformSync(await Bun.file(remoteScript).text())
+
 function escapeHtml(input: string): string {
 	return input
 		.replaceAll('&', '&amp;')
@@ -187,155 +191,7 @@ export function renderRemotePage(transcript: LoadedTranscript, config: CueConfig
 	<div id="list"></div>
 </div>
 <script>
-(() => {
-	const DATA = window.__CUE__
-	let cues = DATA.cues
-	let index = DATA.state.index
-	let playing = DATA.state.playing
-	const $ = (sel) => document.querySelector(sel)
-
-	function send(body) {
-		fetch('/api/remote', {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify(body),
-		}).catch(() => {})
-	}
-
-	function esc(s) {
-		return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-	}
-
-	function render() {
-		const total = cues.length
-		$('#count').textContent = Math.min(index + 1, total) + ' / ' + total
-		const badge = $('#badge')
-		badge.textContent = index >= total ? 'done' : playing ? 'playing' : 'paused'
-		badge.classList.toggle('playing', playing && index < total)
-		$('#fill').style.width = (total > 0 ? (index / total) * 100 : 0) + '%'
-		const cur = cues[index]
-		$('#current').innerHTML = cur
-			? '<div class="cue">' + (cur.section ? '<span class="section">' + esc(cur.section) + '</span>' : '') + esc(cur.text) + '</div>'
-			: '<div class="cue">— end —</div>'
-		let upcoming = ''
-		for (let i = index + 1; i < Math.min(index + 3, total); i++) {
-			upcoming += '<div>' + esc(cues[i].text) + '</div>'
-		}
-		$('#next').innerHTML = upcoming
-		const list = $('#list')
-		list.innerHTML = ''
-		cues.forEach((cue, i) => {
-			const b = document.createElement('button')
-			b.className = i === index ? 'cur' : ''
-			b.innerHTML = '<span class="n">' + (i + 1) + '</span>' + esc(cue.text)
-			b.addEventListener('click', () => {
-				$('#drawer').classList.remove('open')
-				apply({ action: 'goto', index: i })
-			})
-			list.appendChild(b)
-		})
-	}
-
-	function apply(body) {
-		if (body.action === 'toggle') {
-			send({ action: playing ? 'pause' : 'play' })
-			playing = !playing
-		} else {
-			send(body)
-			if (body.action === 'next') index = Math.min(index + 1, cues.length)
-			else if (body.action === 'prev') index = Math.max(0, index - 1)
-			else if (body.action === 'goto') index = body.index
-			else if (body.action === 'restart') index = 0
-		}
-		render()
-	}
-
-	let textOn = true
-	try { textOn = localStorage.getItem('cue-remote-text') !== '0' } catch (_) {}
-	function toggleText() {
-		textOn = !textOn
-		try { localStorage.setItem('cue-remote-text', textOn ? '1' : '0') } catch (_) {}
-		document.body.classList.toggle('text-off', !textOn)
-	}
-	document.body.classList.toggle('text-off', !textOn)
-
-	document.querySelectorAll('[data-act]').forEach((el) => {
-		el.addEventListener('click', (ev) => {
-			ev.stopPropagation()
-			const act = el.dataset.act
-			if (act === 'list') {
-				$('#drawer').classList.add('open')
-				return
-			}
-			if (act === 'text') {
-				toggleText()
-				return
-			}
-			apply({ action: act })
-		})
-	})
-	$('#fab').addEventListener('click', () => document.body.classList.toggle('bar-open'))
-	$('#close').addEventListener('click', () => $('#drawer').classList.remove('open'))
-	$('#restart').addEventListener('click', () => {
-		$('#drawer').classList.remove('open')
-		apply({ action: 'restart' })
-	})
-	document.addEventListener('keydown', (e) => {
-		if (e.key === 'ArrowRight') apply({ action: 'next' })
-		else if (e.key === 'ArrowLeft') apply({ action: 'prev' })
-		else if (e.key === ' ') { e.preventDefault(); apply({ action: 'toggle' }) }
-	})
-
-	function pullState() {
-		fetch('/api/state')
-			.then((r) => r.json())
-			.then((s) => {
-				if (s && (s.index !== index || s.playing !== playing)) {
-					index = s.index
-					playing = s.playing
-					render()
-				}
-			})
-			.catch(() => {})
-	}
-
-	let firstOpen = true
-
-	function connect() {
-		try {
-			const es = new EventSource('/events')
-			es.addEventListener('open', () => {
-				if (firstOpen) {
-					firstOpen = false
-					return
-				}
-				pullState()
-			})
-			es.addEventListener('reload', (ev) => {
-				try {
-					const data = JSON.parse(ev.data)
-					if (data.state) {
-						index = data.state.index
-						playing = data.state.playing
-					}
-					if (data.cues) cues = data.cues
-					render()
-				} catch (_) {}
-			})
-			es.onerror = () => {
-				try { es.close() } catch (_) {}
-				setTimeout(connect, 2000)
-			}
-		} catch (_) {}
-	}
-
-	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') pullState()
-	})
-
-	render()
-	connect()
-})()
+${REMOTE_JS}
 </script>
 </body>
 </html>`

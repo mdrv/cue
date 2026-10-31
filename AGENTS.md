@@ -5,7 +5,7 @@ Guidance for AI agents (Claude, Cursor, Copilot, opencode, etc.) working on Cue.
 ## Project invariants (do not violate)
 
 1. **Pure TypeScript on Bun.** No Node.js, no webpack, no vite, no frontend framework.
-2. **Vanilla frontend, no build step.** The prompter is a single HTML string with inline CSS/JS. Served by `Bun.file`. The prompter UI renders markdown client-side; `Bun.markdown` is only available server-side.
+2. **Vanilla frontend, no bundler config, no build artifacts.** The prompter is a single HTML string with inline CSS/JS, assembled at serve time: frontend TypeScript modules are bundled in memory via `Bun.build` (target browser) before inlining — nothing is written to disk and no CI build step exists. The prompter UI renders markdown client-side; `Bun.markdown` is only available server-side.
 3. **Config is TypeScript, not YAML/TOML.** `defineConfig()` helper in `cue.ts`.
 4. **Transcript files are `.ts` files.** They export `transcript` — a bare array or `{meta, cues}` object — and may also export `config` (a partial `CueConfig`; layers: defaults ← file ← meta ← inline ← flags).
 5. **Speaker routing is declarative.** Config maps names to columns; transcript tags cues; frontend renders. Three clean layers.
@@ -21,6 +21,7 @@ Guidance for AI agents (Claude, Cursor, Copilot, opencode, etc.) working on Cue.
 | ------------- | --------------------------------------------------------------------------------- |
 | Runtime       | Bun (latest, ^1.4.4)                                                              |
 | Language      | TypeScript strict (typescript@^7 for editor parity), `allowImportingTsExtensions` |
+| Frontend      | TS modules in `src/frontend/`, bundled in memory at serve time via `Bun.build`    |
 | CLI framework | `@crustjs/core` + `@crustjs/extensions`                                           |
 | HTTP server   | `Bun.serve` (built-in)                                                            |
 | File watcher  | `node:fs.watch` (`Bun.watch` was removed in the Bun 1.4 Rust rewrite)             |
@@ -78,4 +79,5 @@ Never add a package.json script named `check` — it shadows the built-in `bun c
 
 ## Status
 
+**v0.2.0** — typed frontend: `src/frontend/*.ts` modules, in-memory bundling at serve time, `app.js` removed.
 **v0.1.0** — platform refresh: Bun 1.4 (Rust runtime), TypeScript 7, CrustJS 0.5 Extensions, `bun check`, LogTape 2.4, zod 4.6.
