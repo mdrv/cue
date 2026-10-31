@@ -1,12 +1,14 @@
-import { pathToFileURL } from 'node:url'
+import { createRequire } from 'node:module'
+import { resolve } from 'node:path'
 import { cueError } from '../errors/index.ts'
 import { getLogger } from '../log/logger.ts'
-import { type ParsedTranscript, transcriptSchema } from './schema.ts'
-import type { Transcript } from './types.ts'
+import { transcriptSchema } from './schema.ts'
+import type { LoadedTranscript } from './types.ts'
 
 const log = getLogger(['cue', 'transcript'])
+const require = createRequire(import.meta.url)
 
-export async function loadTranscript(filePath: string): Promise<Transcript> {
+export async function loadTranscript(filePath: string): Promise<LoadedTranscript> {
 	const parsed = await parseTranscriptFile(filePath)
 	checkUniqueIds(parsed.cues, filePath)
 	const speakers = uniqueSpeakers(parsed.cues)
@@ -18,11 +20,12 @@ export async function loadTranscript(filePath: string): Promise<Transcript> {
 	return parsed
 }
 
-export async function parseTranscriptFile(filePath: string): Promise<ParsedTranscript> {
+export async function parseTranscriptFile(filePath: string): Promise<LoadedTranscript> {
 	let mod: Record<string, unknown>
-	const url = pathToFileURL(filePath).href
 	try {
-		mod = (await import(url)) as Record<string, unknown>
+		const resolved = require.resolve(resolve(filePath))
+		delete require.cache[resolved]
+		mod = require(resolved) as Record<string, unknown>
 	} catch (cause) {
 		throw cueError('LOAD', `Failed to import transcript file: ${filePath}`, {
 			file: filePath,
@@ -45,7 +48,7 @@ export async function parseTranscriptFile(filePath: string): Promise<ParsedTrans
 			issues: result.error.issues.map((i) => formatIssue(i.path, i.message, raw)),
 		})
 	}
-	return result.data
+	return { ...result.data, inlineConfig: mod.config }
 }
 
 function formatIssue(

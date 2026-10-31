@@ -1,5 +1,7 @@
 export { defineConfig } from './config/defineConfig.ts'
-export { loadConfig, resolveConfigPath } from './config/loader.ts'
+export { buildConfig, loadConfig, resolveConfigPath } from './config/loader.ts'
+export { mergeConfigPatch, parseConfigPatch } from './config/merge.ts'
+export { configPatchSchema, type CueConfigPatch } from './config/schema.ts'
 export {
 	type Column,
 	type CueConfig,
@@ -20,6 +22,7 @@ export {
 	type Cue,
 	DEFAULT_SPEAKER,
 	DEFAULT_WPM,
+	type LoadedTranscript,
 	type Speaker,
 	type Transcript,
 	type TranscriptMeta,

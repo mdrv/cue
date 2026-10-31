@@ -28,13 +28,16 @@ cue transcript.ts
 ## Features
 
 - **CLI-first** — `cue <file>` with zero config required
-- **Look-ahead focus** — current cue bright, surrounding cues dimmed
+- **Look-ahead focus** — current cue bright, surrounding cues dimmed; `lookBehind` (default 1) and `lookAhead` (default 2) set exactly how many cues precede and follow the focus line — `lookBehind: 0` hides previous lines entirely
 - **Duet mode** — two-column layout for partner reading or translations
-- **Hybrid timing** — auto-advance by duration (ms) or manual keypress, mixed freely
+- **Hybrid timing** — auto-advance by duration (ms) or manual keypress, mixed freely; while playing, a thin countdown bar under the current line shows when the next line comes
 - **Hot-reload** — edit transcript or config, changes appear instantly via SSE
+- **Remote control** — open `/remote` on a phone (same network) and drive the prompter from there: tap zones, play/pause, cue drawer; the prompter reports its own changes back, so both screens stay in sync
 - **Markdown in cues** — `**bold**`, `*italic*`, `` `code` ``, `[label](url)`, plus GFM tables, lists, and headings — rendered safely, with raw HTML and unsafe URLs stripped
-- **Scroll anchor** — `anchor: 'top'` (default) pins focus to top, `anchor: 'bottom'` pins it to the bottom so content scrolls down
+- **Scroll anchor & flow** — `anchor: 'top-left' … 'bottom-right'` pins the focus line to any edge or center; `flow: 'horizontal'` lays cues out as a side-scrolling strip; `reverse` flips the entry edge so the next line arrives from above (or from the left) — ideal when the camera sits on the empty side
 - **Progress bar** — thin position indicator at the bottom
+- **Chrome placement** — `chrome: 'bottom'` moves the title bar and section indicator to the bottom edge (useful when the camera crops the top of the screen)
+- **Content width** — `contentWidth` (px; 0 = auto `60ch`) caps the reading column; `W−` / `W+` in the control bar adjust it live per device (saved)
 - **Persistence** — font size and theme saved per transcript via `localStorage`
 - **Sections** — `section: 'Act I'` per cue with sticky header, inline dividers, and `[`/`]` navigation
 - **Presenter notes** — `{ notes: 'whisper this' }` off-stage panel toggled by `N`
@@ -43,6 +46,7 @@ cue transcript.ts
 - **Focus styles** — `focusStyle: 'opacity' | 'underline' | 'box'` for extra emphasis
 - **Speaker color borders** — colored left edge on every cue from `SpeakerConfig.color`
 - **Optional config** — `~/.config/cue/cue.ts` for theme, speakers, and defaults
+- **Inline config** — `export const config` in the transcript file for self-contained shows (columns, speakers, theme)
 - **Vanilla frontend** — no build step, no framework, single HTML page
 
 ## Transcript format
@@ -66,6 +70,20 @@ Each cue has:
 - `notes` (optional) — presenter notes, shown in off-stage panel
 - `id` (optional) — stable handle for `?id=deep-linking`
 - `say` (optional) — pronunciation hint shown above cue text
+
+Transcript files may also export an inline `config` for self-contained shows:
+
+```ts
+import { defineConfig } from '@mdrv/cue'
+
+export const config = defineConfig({
+	duet: true,
+	fontSize: 56,
+	speakers: { guest: { column: 'right', color: '#a5b4fc' } },
+})
+```
+
+A plain object works too — both validate identically. See [Config](#config) for precedence.
 
 ## CLI
 
@@ -106,7 +124,7 @@ export default defineConfig({
 })
 ```
 
-Resolution order: `--config` → `./.cue/cue.ts` → `~/.config/cue/cue.ts` → defaults.
+Precedence (low → high): `DEFAULT_CONFIG` ← file config (`--config` → `./.cue/cue.ts` → `~/.config/cue/cue.ts`, first found) ← `transcript.meta` (`wpm`/`duet`) ← inline `export const config` ← CLI flags (only when passed). Layers merge deeply — `theme` merges per color and `speakers` per speaker entry, so an inline speaker map doesn't wipe the defaults.
 
 ## Keyboard controls
 
@@ -128,6 +146,7 @@ Resolution order: `--config` → `./.cue/cue.ts` → `~/.config/cue/cue.ts` → 
 
 ```ts
 import {
+	buildConfig,
 	defineConfig,
 	estimateDurations,
 	loadConfig,

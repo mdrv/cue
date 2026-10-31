@@ -1,5 +1,6 @@
 import { defineCommand } from '@crustjs/core'
 import { existsSync } from 'node:fs'
+import { parseConfigPatch } from '../config/merge.ts'
 import { cueError } from '../errors/index.ts'
 import { initLogger } from '../log/logger.ts'
 import { loadTranscript } from '../transcript/load.ts'
@@ -21,10 +22,21 @@ export const checkCmd = defineCommand(
 					}
 					const transcript = await loadTranscript(file)
 					const speakers = [...new Set(transcript.cues.map((c) => c.speaker ?? 'main'))]
+					const inline = transcript.inlineConfig === undefined || transcript.inlineConfig === null
+						? undefined
+						: parseConfigPatch(transcript.inlineConfig, file)
+					const configInfo = inline ? { inline: true, keys: Object.keys(inline) } : undefined
 					if (flags.json) {
 						console.log(
 							JSON.stringify(
-								{ ok: true, file, count: transcript.cues.length, speakers, meta: transcript.meta },
+								{
+									ok: true,
+									file,
+									count: transcript.cues.length,
+									speakers,
+									meta: transcript.meta,
+									config: configInfo,
+								},
 								null,
 								2,
 							),
@@ -32,7 +44,10 @@ export const checkCmd = defineCommand(
 						return
 					}
 					const title = transcript.meta.title ? ` "${transcript.meta.title}"` : ''
-					console.log(`✓ ${file}${title} — ${transcript.cues.length} cues, speakers: ${speakers.join(', ')}`)
+					const configNote = inline ? ` + inline config (${Object.keys(inline).length} keys)` : ''
+					console.log(
+						`✓ ${file}${title} — ${transcript.cues.length} cues, speakers: ${speakers.join(', ')}${configNote}`,
+					)
 				}),
 			),
 )

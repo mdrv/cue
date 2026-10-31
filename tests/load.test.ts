@@ -44,3 +44,25 @@ test('loadTranscript rejects duplicate ids (v0.0.3)', async () => {
 	expect(first).toContain('#1')
 	expect(first).toContain('#2')
 })
+
+test('parseTranscriptFile exposes inlineConfig export', async () => {
+	const t = await parseTranscriptFile(join(fixtures, 'valid.ts'))
+	expect(t.inlineConfig).toBeUndefined()
+})
+
+test('parseTranscriptFile passes through config export untouched', async () => {
+	const t = await parseTranscriptFile(join(fixtures, 'inline-config.ts'))
+	expect(t.cues.length).toBe(2)
+	expect(t.meta.duet).toBe(false)
+	expect(t.inlineConfig).toEqual({
+		duet: true,
+		fontSize: 56,
+		speakers: { guest: { column: 'right', color: '#a5b4fc' } },
+	})
+})
+
+test('transcript layer does not validate inline config (config layer owns it)', async () => {
+	const t = await parseTranscriptFile(join(fixtures, 'inline-bad.ts'))
+	expect(t.cues.length).toBe(1)
+	expect(t.inlineConfig).toEqual({ fontSize: -5 })
+})

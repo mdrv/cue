@@ -107,6 +107,7 @@
 	let playing = false
 	let timer = null
 	let font = loadNum('font', config.fontSize || 48)
+	let col = loadNum('col', config.contentWidth || 0)
 	let notesVisible = loadBool('notes', false)
 
 	function loadNum(key, fallback) {
@@ -154,9 +155,34 @@
 	const notesBody = notesEl.querySelector('.body')
 	const notesUpcoming = notesEl.querySelector('.upcoming')
 
+	function duet() {
+		return Boolean(config.duet || meta.duet)
+	}
+	function pinParts() {
+		const parts = String(config.anchor || 'center').split('-')
+		let v = 'center'
+		let h = 'center'
+		for (const p of parts) {
+			if (p === 'top' || p === 'bottom') v = p
+			else if (p === 'left' || p === 'right') h = p
+		}
+		return { v, h }
+	}
+	function applyLayout() {
+		const { v, h } = pinParts()
+		const flow = !duet() && config.flow === 'horizontal' ? 'horizontal' : 'vertical'
+		const b = document.body.classList
+		b.toggle('flow-h', flow === 'horizontal')
+		b.toggle('reverse', Boolean(config.reverse) && !duet())
+		b.toggle('pin-v-top', v === 'top')
+		b.toggle('pin-v-bottom', v === 'bottom')
+		b.toggle('pin-h-left', flow === 'vertical' && h === 'left')
+		b.toggle('pin-h-right', flow === 'vertical' && h === 'right')
+		b.toggle('chrome-bottom', config.chrome === 'bottom')
+	}
 	titleEl.textContent = meta.title || 'cue'
 	document.title = meta.title ? `${meta.title} — cue` : 'cue'
-	document.body.classList.toggle('anchor-bottom', config.anchor === 'bottom')
+	applyLayout()
 
 	function css() {
 		const t = light ? lightTheme : darkTheme
@@ -166,6 +192,7 @@
 		document.documentElement.style.setProperty('--fade', t.fade)
 		document.documentElement.style.setProperty('--accent', t.accent)
 		document.documentElement.style.setProperty('--font', font + 'px')
+		document.documentElement.style.setProperty('--col', col > 0 ? col + 'px' : '60ch')
 	}
 
 	function subsetFor(column) {
@@ -195,6 +222,12 @@
 		if (cue.say) html += `<span class="say">${escapeHtml(cue.say)}</span>`
 		html += renderText(cue.text)
 		el.innerHTML = html
+		if (role === 'focus' && i === index && playing && cue.duration > 0) {
+			const timer = document.createElement('span')
+			timer.className = 'cuetimer'
+			timer.dataset.duration = String(cue.duration)
+			el.appendChild(timer)
+		}
 		if (column) el.dataset.column = column
 		return el
 	}
@@ -210,21 +243,21 @@
 		const subset = subsetFor(column)
 		const active = activeIn(subset)
 		const wrap = document.createElement('div')
-		wrap.className = 'column' + (config.anchor === 'bottom' ? ' bottom' : '')
-		const startJ = Math.max(0, active - 1)
+		wrap.className = 'column'
+		const startJ = Math.max(0, active - Math.max(0, config.lookBehind ?? 1))
 		let lastSection = startJ > 0 ? sectionOf(subset[startJ - 1]) : null
 		for (let j = startJ; j < subset.length; j++) {
 			const off = j - active
-			if (off > 2) break
+			if (off > (config.lookAhead ?? 2)) break
 			const i = subset[j]
 			const sec = sectionOf(i)
 			if (sec !== lastSection) wrap.appendChild(dividerEl(sec || ''))
 			lastSection = sec
 			let role = null
 			if (off === 0) role = active >= 0 && subset[j] <= index ? 'focus' : 'next'
+			else if (off < 0) role = 'prev'
 			else if (off === 1) role = 'next'
-			else if (off === 2) role = 'next2'
-			else if (off === -1) role = 'prev'
+			else role = 'next2'
 			wrap.appendChild(cueEl(i, role, column))
 		}
 		if (active < 0) wrap.classList.add('standby')
@@ -233,22 +266,29 @@
 
 	function renderSolo() {
 		const wrap = document.createElement('div')
-		wrap.className = 'column solo' + (config.anchor === 'bottom' ? ' bottom' : '')
-		const startJ = Math.max(0, index - 1)
+		wrap.className = 'column solo'
+		const frag = document.createDocumentFragment()
+		const startJ = Math.max(0, index - Math.max(0, config.lookBehind ?? 1))
 		let lastSection = startJ > 0 ? sectionOf(startJ - 1) : null
 		for (let j = startJ; j < total; j++) {
 			const off = j - index
-			if (off > 2) break
+			if (off > (config.lookAhead ?? 2)) break
 			const sec = sectionOf(j)
-			if (sec !== lastSection) wrap.appendChild(dividerEl(sec || ''))
+			if (sec !== lastSection) frag.appendChild(dividerEl(sec || ''))
 			lastSection = sec
 			let role = null
 			if (off === 0) role = index >= total ? null : 'focus'
+			else if (off < 0) role = 'prev'
 			else if (off === 1) role = 'next'
-			else if (off === 2) role = 'next2'
-			else if (off === -1) role = 'prev'
+			else role = 'next2'
 			if (!role) continue
-			wrap.appendChild(cueEl(j, role))
+			frag.appendChild(cueEl(j, role))
+		}
+		if (!document.body.classList.contains('flow-h')) {
+			const kids = Array.from(frag.children)
+			for (let k = kids.length - 1; k >= 0; k--) wrap.appendChild(kids[k])
+		} else {
+			wrap.appendChild(frag)
 		}
 		return wrap
 	}
@@ -303,11 +343,17 @@
 			fin.className = 'fin'
 			fin.textContent = '— end —'
 			stage.appendChild(fin)
-		} else if (config.duet || meta.duet) {
+		} else if (duet()) {
 			stage.appendChild(renderColumn('left'))
 			stage.appendChild(renderColumn('right'))
 		} else {
 			stage.appendChild(renderSolo())
+		}
+		const t = stage.querySelector('.cuetimer')
+		if (t) {
+			void t.offsetWidth
+			t.style.transition = `width ${Number(t.dataset.duration || 0)}ms linear`
+			t.style.width = '100%'
 		}
 		progressEl.textContent = `${Math.min(index + 1, total)} / ${total}`
 		stateEl.textContent = index >= total ? 'done' : playing ? 'playing' : 'paused'
@@ -318,8 +364,19 @@
 		}
 		renderSectionbar()
 		renderNotes()
+		syncRemote()
 		const f = stage.querySelector('.focus')
-		if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' })
+		if (f) {
+			requestAnimationFrame(() => {
+				const { v, h } = pinParts()
+				const horizontal = document.body.classList.contains('flow-h')
+				f.scrollIntoView({
+					block: v === 'top' ? 'start' : v === 'bottom' ? 'end' : 'center',
+					inline: horizontal ? (h === 'left' ? 'start' : h === 'right' ? 'end' : 'center') : 'nearest',
+					behavior: playing ? 'auto' : 'smooth',
+				})
+			})
+		}
 	}
 
 	function scheduleAuto() {
@@ -333,6 +390,7 @@
 
 	function advance() {
 		if (index < total) index++
+		if (index >= total) playing = false
 		render()
 		scheduleAuto()
 	}
@@ -401,10 +459,66 @@
 	}
 	document.addEventListener('keydown', onKey)
 
-	stage.addEventListener('click', () => advance())
+	stage.addEventListener('click', (e) => {
+		if (e.clientX < window.innerWidth * 0.2) prev()
+		else advance()
+	})
+
+	const hintEl = document.getElementById('hint')
+	hintEl.addEventListener('click', (e) => {
+		e.stopPropagation()
+		document.body.classList.toggle('controls-open')
+	})
+	document.querySelectorAll('#controls [data-cmd]').forEach((el) => {
+		el.addEventListener('click', (e) => {
+			e.stopPropagation()
+			const cmd = el.dataset.cmd
+			if (cmd === 'prev') prev()
+			else if (cmd === 'next') advance()
+			else if (cmd === 'toggle') togglePlay()
+			else if (cmd === 'restart') restart()
+			else if (cmd === 'secprev') jumpSection(-1)
+			else if (cmd === 'secnext') jumpSection(1)
+			else if (cmd === 'fontdown') {
+				font = Math.max(16, font - 4)
+				saveNum('font', font)
+				render()
+			} else if (cmd === 'fontup') {
+				font = Math.min(160, font + 4)
+				saveNum('font', font)
+				render()
+			} else if (cmd === 'colwidthdown') {
+				const cur = document.querySelector('.column.standalone, .solo')?.offsetWidth || 960
+				col = Math.max(320, Math.round(cur * 0.8))
+				saveNum('col', col)
+				css()
+			} else if (cmd === 'colwidthup') {
+				const cur = document.querySelector('.column.standalone, .solo')?.offsetWidth || 960
+				col = Math.min(4000, Math.round(cur * 1.25))
+				saveNum('col', col)
+				css()
+			} else if (cmd === 'notes') toggleNotes()
+			else if (cmd === 'theme') {
+				light = !light
+				saveBool('light', light)
+				css()
+			} else if (cmd === 'full') {
+				if (!document.fullscreenElement) document.documentElement.requestFullscreen?.()
+				else document.exitFullscreen?.()
+			} else if (cmd === 'close') document.body.classList.remove('controls-open')
+		})
+	})
+	if (!document.documentElement.requestFullscreen) {
+		document.querySelector('[data-cmd="full"]')?.remove()
+	}
 
 	function applyReload(data) {
 		if (!data) return
+		if (data.state) {
+			if (!data.cues && !data.config && data.state.index === index && data.state.playing === playing) return
+			index = data.state.index
+			playing = data.state.playing
+		}
 		if (data.cues) {
 			transcript.cues = data.cues
 			transcript.meta = data.meta || transcript.meta
@@ -414,15 +528,34 @@
 		}
 		if (data.config) {
 			Object.assign(config, data.config)
-			document.body.classList.toggle('anchor-bottom', config.anchor === 'bottom')
+			applyLayout()
 		}
 		render()
 		scheduleAuto()
 	}
 
+	function pullState() {
+		if (syncTimer !== null) return
+		fetch('/api/state')
+			.then((r) => r.json())
+			.then((s) => {
+				if (s && (s.index !== index || s.playing !== playing)) applyReload({ state: s })
+			})
+			.catch(() => {})
+	}
+
+	let firstOpen = true
+
 	function connect() {
 		try {
 			const es = new EventSource('/events')
+			es.addEventListener('open', () => {
+				if (firstOpen) {
+					firstOpen = false
+					return
+				}
+				pullState()
+			})
 			es.addEventListener('reload', (ev) => {
 				try {
 					applyReload(JSON.parse(ev.data))
@@ -437,6 +570,10 @@
 		} catch (_) {}
 	}
 
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible') pullState()
+	})
+
 	function applyDeepLink() {
 		try {
 			const params = new URLSearchParams(window.location.search)
@@ -447,8 +584,22 @@
 		} catch (_) {}
 	}
 
+	let syncTimer = null
+
+	function syncRemote() {
+		clearTimeout(syncTimer)
+		syncTimer = setTimeout(() => {
+			fetch('/api/remote', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ action: 'sync', index, playing }),
+			}).catch(() => {})
+		}, 120)
+	}
+
 	applyDeepLink()
 	render()
+	syncRemote()
 	scheduleAuto()
 	connect()
 })()

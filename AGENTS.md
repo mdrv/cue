@@ -7,9 +7,9 @@ Guidance for AI agents (Claude, Cursor, Copilot, opencode, etc.) working on Cue.
 1. **Pure TypeScript on Bun.** No Node.js, no webpack, no vite, no frontend framework.
 2. **Vanilla frontend, no build step.** The prompter is a single HTML string with inline CSS/JS. Served by `Bun.file`. The prompter UI renders markdown client-side; `Bun.markdown` is only available server-side.
 3. **Config is TypeScript, not YAML/TOML.** `defineConfig()` helper in `cue.ts`.
-4. **Transcript files are `.ts` files.** They export `transcript` — a bare array or `{meta, cues}` object.
+4. **Transcript files are `.ts` files.** They export `transcript` — a bare array or `{meta, cues}` object — and may also export `config` (a partial `CueConfig`; layers: defaults ← file ← meta ← inline ← flags).
 5. **Speaker routing is declarative.** Config maps names to columns; transcript tags cues; frontend renders. Three clean layers.
-6. **`transcript/` and `errors/` are pure modules.** No I/O except `parseTranscriptFile` (which uses dynamic import). No async in schema/estimate.
+6. **`transcript/` and `errors/` are pure modules.** No I/O except `parseTranscriptFile` (which uses a cache-invalidated `require` so hot reload sees edits). No async in schema/estimate.
 7. **CLI goes through the public `src/index.ts` API.** Never import internal modules from `cli/`.
 8. **LogTape core is `@logtape/logtape`** — NOT `@logtape/tapelog` or any other package.
 9. **No code comments** unless the user explicitly requests them.

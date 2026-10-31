@@ -17,7 +17,9 @@
 		"**/node_modules",
 		"**/*-lock.json",
 		"**/dist",
-		"*.min.js"
+		"*.min.js",
+		"prek.toml",
+		".lhg/**"
 	],
 	"plugins": [
 		"https://plugins.dprint.dev/typescript-0.96.1.wasm",

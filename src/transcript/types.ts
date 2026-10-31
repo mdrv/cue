@@ -21,5 +21,9 @@ export interface Transcript {
 	readonly cues: readonly Cue[]
 }
 
+export interface LoadedTranscript extends Transcript {
+	readonly inlineConfig?: unknown
+}
+
 export const DEFAULT_SPEAKER: Speaker = 'main'
 export const DEFAULT_WPM = 160

@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { loadConfig, resolveConfigPath } from '../config/loader.ts'
+import { buildConfig, resolveConfigPath } from '../config/loader.ts'
 import { cueError } from '../errors/index.ts'
 import { getLogger, initLogger } from '../log/logger.ts'
 import { serveTranscript } from '../server/serve.ts'
-import type { ServeHandle } from '../server/serve.ts'
+import type { ReloadSource, ServeHandle } from '../server/serve.ts'
 import { estimateDurations } from '../transcript/estimate.ts'
 import { loadTranscript } from '../transcript/load.ts'
 import type { GlobalFlags } from './shared.ts'
@@ -21,23 +21,26 @@ export const playAction = withErrors<
 		throw cueError('LOAD', `Transcript file not found: ${file ?? '(none)'}`, { file })
 	}
 
-	const buildConfig = async () => {
-		const base = await loadConfig(flags.config)
-		return {
-			...base,
-			port: flags.port ?? base.port,
-			open: flags.open ?? true,
-			duet: flags.duet ?? base.duet,
-			wpm: flags.wpm ?? base.wpm,
-		}
-	}
-	const configPath = resolveConfigPath(flags.config)
-	const config = await buildConfig()
-
 	const transcriptPath = resolve(file)
+	const first = await loadTranscript(transcriptPath)
+	const build = (source?: ReloadSource) =>
+		buildConfig({
+			configFlag: flags.config,
+			inline: source ? source.inline : first.inlineConfig,
+			meta: source ? source.meta : first.meta,
+			inlineSource: transcriptPath,
+			overrides: {
+				port: flags.port,
+				open: flags.open,
+				duet: flags.duet,
+				wpm: flags.wpm,
+			},
+		})
+	const configPath = resolveConfigPath(flags.config)
+	const config = await build()
+
 	if (flags.estimate) {
-		const t = await loadTranscript(file)
-		estimateDurations(t.cues, config.wpm)
+		estimateDurations(first.cues, config.wpm)
 		log.info('Estimating missing durations at {wpm} wpm', { wpm: config.wpm })
 	}
 
@@ -45,7 +48,7 @@ export const playAction = withErrors<
 		transcriptPath,
 		config,
 		configPath,
-		reloadConfig: buildConfig,
+		reloadConfig: (source) => build(source),
 		watch: true,
 	})
 	log.info('cue is running. Press Ctrl+C to stop.')
